@@ -1,0 +1,54 @@
+name: Diagnose EFL document root
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/document-root-diagnostic.yml
+      - .github/scripts/document_root_diagnostic.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Test FTP-to-web mapping
+        id: root
+        continue-on-error: true
+        env:
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
+        run: python .github/scripts/document_root_diagnostic.py
+
+      - name: Publish document-root result
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          ROOT_STATE: ${{ steps.root.outputs.state }}
+          ROOT_MESSAGE: ${{ steps.root.outputs.message }}
+        with:
+          script: |
+            const state = process.env.ROOT_STATE === 'success' ? 'success' : 'failure';
+            const message = (process.env.ROOT_MESSAGE || 'Document-root diagnostic returned no result').slice(0, 135);
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              description: message,
+              context: `document-root/${message.replaceAll('/', '-').slice(0, 70)}`
+            });
+
+      - name: Fail when mapping is wrong
+        if: always() && steps.root.outputs.state != 'success'
+        run: exit 1
