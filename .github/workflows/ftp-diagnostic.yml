@@ -17,6 +17,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
       - name: Test FTPS settings
         id: diagnose
         continue-on-error: true
@@ -25,81 +28,7 @@ jobs:
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
           FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
-        shell: bash
-        run: |
-          set +e
-          state=failure
-          message='Unknown FTPS diagnostic failure'
-
-          if [[ -z "$FTP_SERVER" || -z "$FTP_USERNAME" || -z "$FTP_PASSWORD" || -z "$FTP_SERVER_DIR" ]]; then
-            message='One or more required FTP secrets are missing'
-          elif [[ "$FTP_SERVER" == *://* || "$FTP_SERVER" == */* ]]; then
-            message='FTP_SERVER must be a hostname only, with no protocol or path'
-          else
-            python - "$FTP_SERVER" <<'PY'
-          import socket, sys
-          host = sys.argv[1]
-          try:
-              socket.getaddrinfo(host, 21)
-              with socket.create_connection((host, 21), timeout=15):
-                  pass
-          except Exception as exc:
-              print(f'Connection check failed: {type(exc).__name__}')
-              raise SystemExit(1)
-          PY
-            socket_status=$?
-            if (( socket_status != 0 )); then
-              message='FTP_SERVER could not be reached on port 21'
-            else
-              root_error=$(mktemp)
-              curl --silent --show-error --fail --ssl-reqd --ftp-pasv \
-                --connect-timeout 20 --max-time 45 \
-                --user "$FTP_USERNAME:$FTP_PASSWORD" \
-                --list-only "ftp://$FTP_SERVER/" \
-                --output /dev/null 2>"$root_error"
-              root_status=$?
-
-              if (( root_status != 0 )); then
-                if grep -qiE '530|login|authentication|access denied' "$root_error"; then
-                  message='FTP username or password was rejected by GoDaddy'
-                elif grep -qiE 'SSL|TLS|certificate' "$root_error"; then
-                  message='GoDaddy FTPS/TLS connection could not be established'
-                else
-                  message="FTPS root connection failed with curl code $root_status"
-                fi
-              else
-                target="$FTP_SERVER_DIR"
-                target="${target#./}"
-                target="${target#/}"
-                target="${target%/}"
-
-                if [[ -z "$target" || "$target" == '.' ]]; then
-                  target_url="ftp://$FTP_SERVER/"
-                else
-                  target_url="ftp://$FTP_SERVER/$target/"
-                fi
-
-                dir_error=$(mktemp)
-                curl --silent --show-error --fail --ssl-reqd --ftp-pasv \
-                  --connect-timeout 20 --max-time 45 \
-                  --user "$FTP_USERNAME:$FTP_PASSWORD" \
-                  --list-only "$target_url" \
-                  --output /dev/null 2>"$dir_error"
-                dir_status=$?
-
-                if (( dir_status != 0 )); then
-                  message='FTP login works, but FTP_SERVER_DIR is not accessible'
-                else
-                  state=success
-                  message='FTPS hostname, login and target directory are valid'
-                fi
-              fi
-            fi
-          fi
-
-          echo "state=$state" >> "$GITHUB_OUTPUT"
-          echo "message=$message" >> "$GITHUB_OUTPUT"
-          echo "$message"
+        run: python .github/scripts/ftp_diagnostic.py
 
       - name: Publish diagnostic result
         if: always()
