@@ -1,0 +1,27 @@
+name: Inspect GoDaddy document root
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/remote-inventory.yml
+      - .github/scripts/remote_inventory.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: List remote website files
+        env:
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
+        run: python .github/scripts/remote_inventory.py
