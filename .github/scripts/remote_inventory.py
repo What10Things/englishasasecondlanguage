@@ -49,4 +49,4 @@ summary = ", ".join(sorted(root_entries, key=str.lower))
 output_path = os.environ.get("GITHUB_OUTPUT")
 if output_path:
     with Path(output_path).open("a", encoding="utf-8") as output:
-        output.write(f"summary={summary[:130]}\n")
+        output.write(f"summary={summary}\n")
