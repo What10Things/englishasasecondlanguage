@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ftplib
 import os
+from pathlib import Path
 
 HOST = "englishasaforeignlanguage.com"
 USERNAME = os.environ["FTP_USERNAME"]
@@ -9,16 +10,20 @@ PASSWORD = os.environ["FTP_PASSWORD"]
 SERVER_DIR = os.environ.get("FTP_SERVER_DIR", "./").strip()
 
 
-def list_dir(ftp: ftplib.FTP_TLS, path: str, depth: int = 0, max_depth: int = 2) -> None:
-    prefix = "  " * depth
+def get_entries(ftp: ftplib.FTP_TLS, path: str):
     try:
-        entries = list(ftp.mlsd(path))
+        return list(ftp.mlsd(path))
     except (ftplib.error_perm, AttributeError):
         current = ftp.pwd()
         ftp.cwd(path)
         entries = [(name, {"type": "unknown"}) for name in ftp.nlst()]
         ftp.cwd(current)
+        return entries
 
+
+def list_dir(ftp: ftplib.FTP_TLS, path: str, depth: int = 0, max_depth: int = 2) -> None:
+    prefix = "  " * depth
+    entries = get_entries(ftp, path)
     for name, facts in sorted(entries, key=lambda item: item[0].lower()):
         if name in {".", ".."}:
             continue
@@ -37,4 +42,11 @@ with ftplib.FTP_TLS(timeout=30) as ftp:
     if SERVER_DIR not in {"", ".", "./", "/"}:
         ftp.cwd(SERVER_DIR.removeprefix("./").rstrip("/"))
     print(f"Remote root: {ftp.pwd()}")
+    root_entries = [name for name, _ in get_entries(ftp, ".") if name not in {".", ".."}]
     list_dir(ftp, ".")
+
+summary = ", ".join(sorted(root_entries, key=str.lower))
+output_path = os.environ.get("GITHUB_OUTPUT")
+if output_path:
+    with Path(output_path).open("a", encoding="utf-8") as output:
+        output.write(f"summary={summary[:130]}\n")
