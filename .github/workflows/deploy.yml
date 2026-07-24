@@ -30,21 +30,6 @@ jobs:
           test -f godaddy/index.php
           test -f tests/smoke.php
 
-      - name: Validate deployment secrets
-        env:
-          FTP_SERVER: ${{ secrets.FTP_SERVER }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-        run: |
-          missing=()
-          [[ -n "$FTP_SERVER" ]] || missing+=(FTP_SERVER)
-          [[ -n "$FTP_USERNAME" ]] || missing+=(FTP_USERNAME)
-          [[ -n "$FTP_PASSWORD" ]] || missing+=(FTP_PASSWORD)
-          if (( ${#missing[@]} )); then
-            echo "::error::Missing GitHub Actions secrets: ${missing[*]}"
-            exit 1
-          fi
-
       - name: Lint PHP
         run: find godaddy -name '*.php' -print0 | xargs -0 -n1 php -l
 
@@ -60,6 +45,23 @@ jobs:
           trap 'kill $server_pid' EXIT
           sleep 2
           SMOKE_BASE=http://127.0.0.1:8099 php tests/smoke.php
+
+      - name: Validate deployment secrets
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
+        run: |
+          missing=()
+          [[ -n "$FTP_SERVER" ]] || missing+=(FTP_SERVER)
+          [[ -n "$FTP_USERNAME" ]] || missing+=(FTP_USERNAME)
+          [[ -n "$FTP_PASSWORD" ]] || missing+=(FTP_PASSWORD)
+          [[ -n "$FTP_SERVER_DIR" ]] || missing+=(FTP_SERVER_DIR)
+          if (( ${#missing[@]} )); then
+            echo "::error::Missing GitHub Actions secrets: ${missing[*]}"
+            exit 1
+          fi
 
       - name: Report deployment started
         uses: actions/github-script@v7
@@ -84,7 +86,7 @@ jobs:
           protocol: ftps
           port: 21
           local-dir: ./godaddy/
-          server-dir: ./
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
           state-name: .ftp-deploy-efl-state.json
           exclude: |
             **/.git*
