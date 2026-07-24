@@ -37,27 +37,27 @@ jobs:
               ['http-index-php', results['http:/index.php']],
             ];
             for (const [name, result] of checks) {
-              const description = result.error
-                ? `${name}: ${result.error}`
-                : `${name}: HTTP ${result.status}; ${result.identity || result.location || 'no identity'}`;
+              const detail = result.error
+                ? result.error
+                : `HTTP ${result.status} ${(result.identity || result.location || 'no identity')}`;
               await github.rest.repos.createCommitStatus({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 sha: context.sha,
                 state: 'success',
                 target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-                description: description.slice(0, 140),
-                context: `vhost/${name}`,
+                description: `${name}: ${detail}`.slice(0, 140),
+                context: `vhost/${name}/${detail.replaceAll('/', '-').slice(0, 70)}`,
               });
             }
             const cert = results.certificate || {};
-            const certDescription = cert.error ? `certificate: ${cert.error}` : `certificate SAN: ${(cert.sans || []).join(', ')}`;
+            const certDetail = cert.error ? cert.error : (cert.sans || []).join(', ');
             await github.rest.repos.createCommitStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
               sha: context.sha,
               state: 'success',
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-              description: certDescription.slice(0, 140),
-              context: 'vhost/certificate',
+              description: `certificate: ${certDetail}`.slice(0, 140),
+              context: `vhost/certificate/${certDetail.replaceAll('/', '-').slice(0, 70)}`,
             });
