@@ -71,16 +71,9 @@ jobs:
               sha: context.sha,
               state: 'pending',
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-              description: 'Replacing legacy site and deploying EFL by Level',
+              description: 'Testing and deploying EFL by Level',
               context: 'deployment/godaddy'
             });
-
-      - name: Remove legacy website files
-        env:
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-          FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
-        run: python .github/scripts/clean_remote_site.py
 
       - name: Deploy website using FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
