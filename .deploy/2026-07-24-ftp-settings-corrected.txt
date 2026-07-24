@@ -1,0 +1,1 @@
+Deployment retriggered after correcting FTP_SERVER and FTP_SERVER_DIR.
