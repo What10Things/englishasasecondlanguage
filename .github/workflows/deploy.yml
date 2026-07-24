@@ -27,6 +27,7 @@ jobs:
           cat release/site-bundle.part* > /tmp/efl-site-bundle.tar.gz.b64
           base64 --decode /tmp/efl-site-bundle.tar.gz.b64 > /tmp/efl-site-bundle.tar.gz
           tar -xzf /tmp/efl-site-bundle.tar.gz
+          rm -f godaddy/index.html godaddy/index.htm godaddy/default.html godaddy/default.htm
           test -f godaddy/index.php
           test -f tests/smoke.php
 
@@ -71,9 +72,16 @@ jobs:
               sha: context.sha,
               state: 'pending',
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-              description: 'Testing and deploying EFL by Level',
+              description: 'Removing legacy index and deploying EFL by Level',
               context: 'deployment/godaddy'
             });
+
+      - name: Remove conflicting legacy index files
+        env:
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
+        run: python .github/scripts/remove_legacy_index.py
 
       - name: Deploy website using FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
