@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - .github/workflows/ftp-diagnostic.yml
+      - .github/scripts/ftp_diagnostic.py
   workflow_dispatch:
 
 permissions:
