@@ -28,19 +28,21 @@ jobs:
           FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
         run: python .github/scripts/remote_inventory.py
 
-      - name: Publish inventory summary
+      - name: Publish inventory entries
         uses: actions/github-script@v7
         env:
           INVENTORY: ${{ steps.inventory.outputs.summary }}
         with:
           script: |
-            const summary = (process.env.INVENTORY || 'No remote entries returned').slice(0, 130);
-            await github.rest.repos.createCommitStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              sha: context.sha,
-              state: 'success',
-              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-              description: summary,
-              context: `inventory/${summary.slice(0, 80)}`
-            });
+            const entries = (process.env.INVENTORY || '').split(', ').filter(Boolean);
+            for (const entry of entries.slice(0, 40)) {
+              await github.rest.repos.createCommitStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                sha: context.sha,
+                state: 'success',
+                target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+                description: `Remote root contains ${entry}`.slice(0, 140),
+                context: `inventory/${entry.slice(0, 90)}`,
+              });
+            }
