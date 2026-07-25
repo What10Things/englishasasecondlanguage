@@ -2,42 +2,61 @@
 
 Production source for **englishasaforeignlanguage.com**.
 
-The rebuilt site is a GoDaddy-friendly PHP application with:
+The live site is a GoDaddy-compatible **Flask application running through CloudLinux Passenger**. It includes:
 
 - separate learner and teacher journeys
 - A1–C2 CEFR level hubs
 - grammar, vocabulary, listening, reading, writing, speaking, Business English and IELTS routes
 - teacher lesson-plan, worksheet, game, PowerPoint, placement-test and classroom-management routes
 - a 24-question English level test
-- consent-aware lead capture
+- Flask-based form and lead handling
 - shop, product and bundle foundations
 - responsive navigation, accessibility states, cookie choices, sitemap and legal pages
-- automated PHP linting, JavaScript checks, route smoke tests, FTPS deployment and live verification
+- automated Flask validation, JavaScript checks, FTPS deployment, Passenger restart and live verification
 
-## Production source
+## Flask application
 
-The complete production tree is stored in `release/site-bundle.part00` through `release/site-bundle.part04`. GitHub Actions reconstructs the bundle before every test and deployment.
+The Python runtime is stored in `flask_app/`:
 
-To unpack it locally:
+- `app.py` — Flask application and route dispatcher
+- `passenger_wsgi.py` — cPanel Passenger entry point
+- `build_from_legacy.py` — preserves the existing rendered design and routes while generating Flask-served page snapshots
+- `remote_deploy.py` — removes the previous PHP entry files and verifies the Passenger deployment
+- `validate.py` — route, health and form tests
 
-```bash
-cat release/site-bundle.part* | base64 -d > /tmp/efl-site-bundle.tar.gz
-tar -xzf /tmp/efl-site-bundle.tar.gz
+The earlier PHP release bundle remains under `release/` only as the verified content/design source used during the migration build. It is not the production runtime.
+
+## Deployment
+
+Every push to `main`:
+
+1. reconstructs the existing EFL content
+2. renders all sitemap and linked routes
+3. assembles a Flask/Passenger application in `deploy/`
+4. validates the homepage, level test, A1 hub, teacher hub, health endpoint and form handling
+5. removes the previous PHP runtime from GoDaddy
+6. deploys the Flask application by FTPS
+7. uploads `tmp/restart.txt` to restart Passenger
+8. verifies that live responses include `X-EFL-Runtime: Flask`
+
+The Passenger application root is:
+
+```text
+/home/uak0tydpqj02/public_html/englishasaforeignlanguage.com
 ```
 
-The deployable website is then available in `godaddy/`.
+It uses the existing Python 3.11 environment already proven by the What10Things Flask application:
+
+```text
+/home/uak0tydpqj02/virtualenv/flask_app/3.11/bin/python
+```
 
 ## Required GitHub Actions secrets
 
-Add these repository secrets before running the deployment:
-
-- `FTP_SERVER` — the FTP/FTPS hostname, not a filesystem path
 - `FTP_USERNAME`
 - `FTP_PASSWORD`
-- `FTP_SERVER_DIR` — the directory visible to that FTP login which maps to the document root for `englishasaforeignlanguage.com`; use `./` only when the FTP account is already rooted in that folder
+- `FTP_SERVER_DIR` — normally `./` because the dedicated FTP account is rooted in the EFL document directory
 
-Every push to `main` then runs the checks, uploads `godaddy/` by FTPS and verifies the live homepage, level test, A1 hub and teacher hub.
+## Submission data
 
-## Lead data
-
-Live submissions are written to `godaddy/storage/leads.csv`. The directory is denied by `.htaccess`, and the CSV is excluded from future deployments so collected data is not overwritten.
+Live form submissions are stored in `storage/submissions.csv`. That file is excluded from later deployments so collected data is not overwritten.
