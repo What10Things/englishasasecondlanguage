@@ -17,7 +17,6 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -29,7 +28,15 @@ jobs:
           tar -xzf /tmp/efl-site-bundle.tar.gz
           rm -f godaddy/index.html godaddy/index.htm godaddy/default.html godaddy/default.htm
           test -f godaddy/index.php
+          test -f godaddy/.htaccess
           test -f tests/smoke.php
+
+          # What10Things is registered as the parent /public_html Passenger app.
+          # Disable inherited Passenger handling inside this PHP site's document root.
+          if ! grep -q '^PassengerEnabled off$' godaddy/.htaccess; then
+            sed -i '1iPassengerEnabled off' godaddy/.htaccess
+          fi
+          grep -q '^PassengerEnabled off$' godaddy/.htaccess
 
       - name: Lint PHP
         run: find godaddy -name '*.php' -print0 | xargs -0 -n1 php -l
@@ -72,7 +79,7 @@ jobs:
               sha: context.sha,
               state: 'pending',
               target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-              description: 'Removing legacy index and deploying EFL by Level',
+              description: 'Disabling inherited Passenger and deploying EFL by Level',
               context: 'deployment/godaddy'
             });
 
@@ -114,7 +121,7 @@ jobs:
               '/teach-english/': ('Ready-made resources', 'Teacher hub'),
           }
           last_error = ''
-          for attempt in range(1, 13):
+          for attempt in range(1, 21):
               failures = []
               for path, phrases in checks.items():
                   try:
@@ -122,7 +129,7 @@ jobs:
                           f'https://englishasaforeignlanguage.com{path}?deploy={int(time.time())}',
                           headers={
                               'User-Agent': 'EFL-deployment-check/1.0',
-                              'Cache-Control': 'no-cache',
+                              'Cache-Control': 'no-cache, no-store, max-age=0',
                               'Pragma': 'no-cache',
                           },
                       )
@@ -137,10 +144,10 @@ jobs:
                   print('Live site verified')
                   break
               last_error = '; '.join(failures)
-              if attempt == 12:
+              if attempt == 20:
                   raise SystemExit(f'Live verification failed: {last_error}')
-              print(f'Attempt {attempt} failed: {last_error}; retrying in 5 seconds')
-              time.sleep(5)
+              print(f'Attempt {attempt} failed: {last_error}; retrying in 6 seconds')
+              time.sleep(6)
           PY
 
       - name: Report deployment status
