@@ -94,7 +94,7 @@ def wait_for_server() -> None:
 
 def fetch_page(route: str) -> tuple[int, str]:
     request = Request(
-        urljoin(BASE_URL, route.lstrip("/")),
+        urljoin(BASE_URL + "/", route.lstrip("/")),
         headers={"Host": "englishasaforeignlanguage.com", "User-Agent": "EFL-Flask-builder/1.0"},
     )
     try:
@@ -142,7 +142,7 @@ def build(legacy_root: Path, router: Path, output: Path) -> None:
                     (output / "pages" / filename).write_text(html, encoding="utf-8")
                     manifest[route] = filename
                     manifest[route.rstrip("/") or "/"] = filename
-                if status < 400 and "text/html" not in html[:200].lower():
+                if status < 400 and ("<html" in html.lower() or "<!doctype html" in html.lower()):
                     parser = LinkParser()
                     parser.feed(html)
                     for href in parser.links:
@@ -153,7 +153,7 @@ def build(legacy_root: Path, router: Path, output: Path) -> None:
             if "/" not in manifest:
                 raise RuntimeError("Homepage could not be rendered from the existing site")
 
-            not_found_status, not_found_html = fetch_page("/__flask_missing_page__/")
+            _, not_found_html = fetch_page("/__flask_missing_page__/")
             if not_found_html.strip():
                 filename = page_name("/404/")
                 (output / "pages" / filename).write_text(not_found_html, encoding="utf-8")
