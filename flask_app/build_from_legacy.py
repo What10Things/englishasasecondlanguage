@@ -17,7 +17,7 @@ from xml.etree import ElementTree
 BASE_URL = "http://127.0.0.1:8099"
 COMPANY_SHORT = "Urban Sky Web Ltd is registered in England and Wales. Company number: 17421062. Registered office: 14/2E Docklands Business Centre, 10–16 Tiller Road, London, E14 8PX."
 COMPANY_SENTENCE = "Urban Sky Web Ltd is a company registered in England and Wales under company number 17421062. Its registered office is 14/2E Docklands Business Centre, 10–16 Tiller Road, London, E14 8PX."
-OPERATOR_ROUTES = {"/about/", "/privacy/", "/affiliate-disclosure/", "/terms/"}
+OPERATOR_ROUTES = {"/about/", "/privacy/", "/privacy-policy/", "/affiliate-disclosure/", "/terms/"}
 ESSENTIAL_ROUTES = {
     "/",
     "/learn-english/",
@@ -25,7 +25,7 @@ ESSENTIAL_ROUTES = {
     "/english-level-test/",
     "/shop/",
     "/contact/",
-    "/privacy/",
+    "/privacy-policy/",
     "/terms/",
     "/learn-english/a1/",
     "/learn-english/a2/",

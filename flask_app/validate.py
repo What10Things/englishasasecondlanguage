@@ -28,7 +28,7 @@ def main() -> None:
         require_text(client, "/teach-english/", "Ready-made resources", "Teacher hub")
         require_text(
             client,
-            "/privacy/",
+            "/privacy-policy/",
             "EnglishAsAForeignLanguage.com is operated by Urban Sky Web Ltd.",
             "17421062",
             "14/2E Docklands Business Centre",
