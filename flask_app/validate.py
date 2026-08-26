@@ -26,6 +26,20 @@ def main() -> None:
         require_text(client, "/english-level-test/", "24 short questions", "Find your starting point")
         require_text(client, "/learn-english/a1/", "Core grammar")
         require_text(client, "/teach-english/", "Ready-made resources", "Teacher hub")
+        require_text(
+            client,
+            "/privacy/",
+            "EnglishAsAForeignLanguage.com is operated by Urban Sky Web Ltd.",
+            "17421062",
+            "14/2E Docklands Business Centre",
+        )
+        require_text(
+            client,
+            "/terms/",
+            "Website operator",
+            "Urban Sky Web Ltd",
+            "registered in England and Wales",
+        )
 
         health = client.get("/health")
         assert health.status_code == 200

@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import time
@@ -14,6 +15,9 @@ from urllib.request import Request, urlopen
 from xml.etree import ElementTree
 
 BASE_URL = "http://127.0.0.1:8099"
+COMPANY_SHORT = "Urban Sky Web Ltd is registered in England and Wales. Company number: 17421062. Registered office: 14/2E Docklands Business Centre, 10–16 Tiller Road, London, E14 8PX."
+COMPANY_SENTENCE = "Urban Sky Web Ltd is a company registered in England and Wales under company number 17421062. Its registered office is 14/2E Docklands Business Centre, 10–16 Tiller Road, London, E14 8PX."
+OPERATOR_ROUTES = {"/about/", "/privacy/", "/affiliate-disclosure/", "/terms/"}
 ESSENTIAL_ROUTES = {
     "/",
     "/learn-english/",
@@ -104,6 +108,42 @@ def fetch_page(route: str) -> tuple[int, str]:
         return error.code, error.read().decode("utf-8", errors="replace")
 
 
+
+def add_company_disclosure(route: str, html: str) -> str:
+    if "Urban Sky Web Ltd" in html:
+        return html
+
+    footer_disclosure = (
+        '<div class="company-disclosure">'
+        '<p><strong>EnglishAsAForeignLanguage.com is operated by Urban Sky Web Ltd.</strong></p>'
+        f'<p>{COMPANY_SHORT}</p>'
+        '</div>'
+    )
+    footer_close = re.search(r"</footer\s*>", html, flags=re.IGNORECASE)
+    if footer_close:
+        html = html[: footer_close.start()] + footer_disclosure + html[footer_close.start() :]
+    else:
+        body_close = re.search(r"</body\s*>", html, flags=re.IGNORECASE)
+        insertion = body_close.start() if body_close else len(html)
+        html = html[:insertion] + f"<footer>{footer_disclosure}</footer>" + html[insertion:]
+
+    if route in OPERATOR_ROUTES:
+        operator_section = (
+            '<section class="company-operator" aria-labelledby="company-operator-title">'
+            '<h2 id="company-operator-title">Website operator</h2>'
+            '<p>EnglishAsAForeignLanguage.com is operated by Urban Sky Web Ltd.</p>'
+            f'<p>{COMPANY_SENTENCE}</p>'
+            '</section>'
+        )
+        main_close = re.search(r"</main\s*>", html, flags=re.IGNORECASE)
+        insertion = main_close.start() if main_close else html.lower().rfind("</body>")
+        if insertion < 0:
+            insertion = len(html)
+        html = html[:insertion] + operator_section + html[insertion:]
+
+    return html
+
+
 def page_name(route: str) -> str:
     return hashlib.sha256(route.encode("utf-8")).hexdigest()[:24] + ".html"
 
@@ -135,6 +175,8 @@ def build(legacy_root: Path, router: Path, output: Path) -> None:
                     continue
                 visited.add(route)
                 status, html = fetch_page(route)
+                if html.strip():
+                    html = add_company_disclosure(route, html)
                 if status >= 500 or not html.strip():
                     continue
                 if status < 400 or route in {"/404/", "/404"}:
