@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import json
 import tempfile
 from pathlib import Path
@@ -32,6 +33,10 @@ def main() -> None:
             "EnglishAsAForeignLanguage.com is operated by Urban Sky Web Ltd.",
             "17421062",
             "14/2E Docklands Business Centre",
+            "Purposes and lawful bases",
+            "object to processing based on legitimate interests",
+            "Information Commissioner's Office",
+            "automatically removed after 24 months",
         )
         require_text(
             client,
@@ -49,12 +54,28 @@ def main() -> None:
 
         submission = client.post(
             "/api/leads",
-            json={"email": "test@example.com", "consent": "yes"},
+            json={"name": "Test", "email": "test@example.com", "privacy_ack": "yes", "unexpected": "discard me"},
             headers={"Accept": "application/json"},
         )
         assert submission.status_code == 200
         assert submission.get_json()["success"] is True
         assert submissions.exists()
+        with submissions.open(newline="", encoding="utf-8") as handle:
+            row = next(csv.DictReader(handle))
+        payload = json.loads(row["payload"])
+        assert "unexpected" not in payload
+        assert payload["privacy_ack"] == "yes"
+
+        rejected = client.post(
+            "/api/leads",
+            json={"name": "Test", "email": "test@example.com"},
+            headers={"Accept": "application/json"},
+        )
+        assert rejected.status_code == 422
+
+        homepage = client.get("/").get_data(as_text=True)
+        assert "Accept analytics" not in homepage
+        assert "Cookie settings" not in homepage
 
         print(json.dumps({"status": "ok", "runtime": "flask", "pages": document["pages"]}, sort_keys=True))
 
