@@ -159,10 +159,10 @@ jobs:
           from urllib.request import Request, urlopen
 
           page_checks = {
-              '/': ('English that meets you', 'Two clear journeys'),
+              '/': ('English that meets you', 'Take the free level test', 'Get the free starter pack'),
               '/english-level-test/': ('24 short questions', 'Find your starting point'),
               '/learn-english/a1/': ('Core grammar',),
-              '/teach-english/': ('Ready-made resources', 'Teacher hub'),
+              '/teach-english/': ('Ready-made resources', 'Find what your lesson needs'),
           }
           last_error = ''
           for attempt in range(1, 26):
