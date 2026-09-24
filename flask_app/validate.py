@@ -73,7 +73,38 @@ def main() -> None:
         )
         assert rejected.status_code == 422
 
-        homepage = client.get("/").get_data(as_text=True)
+        formula_submission = client.post(
+            "/api/leads",
+            json={"name": "=cmd", "email": "formula@example.com", "privacy_ack": "yes"},
+            headers={"Accept": "application/json"},
+        )
+        assert formula_submission.status_code == 200
+        with submissions.open(newline="", encoding="utf-8") as handle:
+            last_row = list(csv.DictReader(handle))[-1]
+        assert last_row["name"] == "'=cmd", "CSV formula-injection guard did not sanitise leading '='"
+
+        rate_limit_ip = {"REMOTE_ADDR": "203.0.113.7"}
+        for _ in range(10):
+            client.post(
+                "/api/leads",
+                json={"name": "Rate", "email": "rate@example.com", "privacy_ack": "yes"},
+                headers={"Accept": "application/json"},
+                environ_overrides=rate_limit_ip,
+            )
+        limited = client.post(
+            "/api/leads",
+            json={"name": "Rate", "email": "rate@example.com", "privacy_ack": "yes"},
+            headers={"Accept": "application/json"},
+            environ_overrides=rate_limit_ip,
+        )
+        assert limited.status_code == 429, "expected rate limiting to trigger after repeated submissions"
+
+        homepage_response = client.get("/")
+        assert homepage_response.headers.get("Content-Security-Policy")
+        assert homepage_response.headers.get("Strict-Transport-Security")
+        assert "max-age=300" in homepage_response.headers.get("Cache-Control", "")
+
+        homepage = homepage_response.get_data(as_text=True)
         assert "Accept analytics" not in homepage
         assert "Cookie settings" not in homepage
 
