@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from threading import Lock
 from typing import Any
+from urllib.parse import urlsplit
 
 from flask import Flask, Response, jsonify, redirect, request, send_from_directory
 
@@ -42,6 +43,30 @@ def is_rate_limited(key: str) -> bool:
             return True
         hits.append(now)
         return False
+
+
+def is_same_site_request(headers, host: str) -> bool:
+    """Reject cross-site POSTs using standards-based, no-JS-compatible signals.
+
+    Modern browsers attach Sec-Fetch-Site and/or Origin to every POST, same-origin
+    or not, so this needs no per-page CSRF token and works for no-JS form posts.
+    Requests with none of these headers (very old browsers) are allowed through,
+    relying on rate limiting; blocking them would break legitimate no-JS users
+    we have no other way to verify.
+    """
+    sec_fetch_site = headers.get("Sec-Fetch-Site")
+    if sec_fetch_site is not None:
+        return sec_fetch_site in ("same-origin", "same-site", "none")
+
+    origin = headers.get("Origin")
+    if origin:
+        return urlsplit(origin).netloc == host
+
+    referer = headers.get("Referer")
+    if referer:
+        return urlsplit(referer).netloc == host
+
+    return True
 
 
 def normalise_path(value: str) -> str:
@@ -144,6 +169,34 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             writer.writerows(kept)
         temporary.replace(output)
 
+    _maintenance_lock = Lock()
+
+    def maybe_run_daily_maintenance(now: datetime) -> None:
+        """Prune old submissions once per day even with no new form activity.
+
+        Runs opportunistically on ordinary GET traffic instead of a GoDaddy cron
+        job. The marker-file mtime check is a single stat() call in the common
+        case (last run under 24h ago), so it does not add meaningful latency;
+        the non-blocking lock means at most one worker thread performs the
+        actual prune, and a failure here never affects the page response.
+        """
+        marker = Path(app.config["SUBMISSIONS_PATH"]).parent / ".last_retention_prune"
+        try:
+            if now.timestamp() - marker.stat().st_mtime < 86400:
+                return
+        except OSError:
+            pass
+        if not _maintenance_lock.acquire(blocking=False):
+            return
+        try:
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.touch()
+            prune_submissions(Path(app.config["SUBMISSIONS_PATH"]), now)
+        except OSError as exc:
+            LOGGER.warning("Daily retention maintenance failed: %s", exc)
+        finally:
+            _maintenance_lock.release()
+
     def save_submission(path: str) -> tuple[bool, str]:
         values = request.get_json(silent=True) if request.is_json else request.form.to_dict(flat=True)
         values = values or {}
@@ -189,14 +242,18 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     def dispatch(requested_path: str = ""):
         route_path = "/" + requested_path
         if request.method == "POST":
+            wants_json = request.is_json or "application/json" in request.headers.get("Accept", "")
+            if not is_same_site_request(request.headers, request.host):
+                message = "This request could not be verified as coming from this site."
+                if wants_json or route_path.startswith("/api/"):
+                    return jsonify(ok=False, success=False, message=message), 403
+                return Response(message, status=403, mimetype="text/plain")
             if is_rate_limited(request.remote_addr or "unknown"):
                 message = "Too many submissions. Please try again in a minute."
-                wants_json = request.is_json or "application/json" in request.headers.get("Accept", "")
                 if wants_json or route_path.startswith("/api/"):
                     return jsonify(ok=False, success=False, message=message), 429
                 return Response(message, status=429, mimetype="text/plain")
             saved, message = save_submission(route_path)
-            wants_json = request.is_json or "application/json" in request.headers.get("Accept", "")
             if not saved:
                 if wants_json or route_path.startswith("/api/"):
                     return jsonify(ok=False, success=False, message=message), 422
@@ -204,6 +261,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             if wants_json or route_path.startswith("/api/"):
                 return jsonify(ok=True, success=True, message=message)
             return redirect("/?submitted=1", code=303)
+
+        maybe_run_daily_maintenance(datetime.now(timezone.utc))
 
         public_dir = Path(app.config["PUBLIC_DIR"])
         candidate = (public_dir / requested_path).resolve()

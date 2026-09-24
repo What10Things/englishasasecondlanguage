@@ -200,3 +200,183 @@ guidance):
   or a build-time nonce refresh strategy) rather than an app.py-only fix.
 - Scheduled retention pruning independent of new submissions — needs a GoDaddy
   cron job (owner/account action).
+
+---
+
+# Continuation pass (2026-09-24)
+
+## What this pass closed from the previous backlog
+
+All in-repository items previously deferred as "content/build-pipeline risk"
+were implemented and tested this pass:
+
+1. **CSRF/cross-site hardening on the lead form** — `is_same_site_request()`
+   in `flask_app/app.py` rejects cross-site POSTs using `Sec-Fetch-Site` (when
+   present, must be `same-origin`/`same-site`/`none`), falling back to
+   `Origin`, then `Referer`, matching the request `Host`. Requests with none of
+   these headers (very old browsers) are allowed through and still covered by
+   the existing rate limiter — blocking them outright would break legitimate
+   no-JS users with no way to re-verify them. This needed no build-pipeline
+   change and works for the pre-rendered static HTML form as-is.
+2. **No-JS level-test fallback** — a `<noscript>` block inside the test card
+   (legacy `godaddy/index.php`) shows the CEFR level cards with their first
+   can-do statement and a link into each level page, explicitly labelled "This
+   is a guide, not an automated score." No JavaScript-only dead end remains,
+   and no scoring claim is made without JavaScript.
+3. **Full sitemap generation** — `build_from_legacy.py` now generates
+   `sitemap.xml` from the real crawled+rendered `page_manifest.json` route set
+   (45 canonical routes) instead of copying the legacy static file (10 routes),
+   excluding `/404/`. Domain is hardcoded to the canonical origin.
+4. **JSON-LD structured data** — every page now emits a minimal
+   `WebSite` + `Organization` graph (name, url, legalName, company number
+   already used elsewhere in the site's own disclosures) via `page_start()` in
+   the legacy renderer. No ratings, reviews or unverifiable claims were added.
+   Canonical `<link>` tags and per-page meta descriptions already existed and
+   were verified, not re-implemented.
+5. **Thin skill-hub card content** — the identical repeated sentence ("Clear
+   guidance, examples and practice organised by level." / "Clear aims,
+   practical staging and reusable classroom material.") on all 96 learner/
+   teacher topic cards was replaced by `lesson_note()`, which generates a
+   topic-appropriate, item-specific description for every card (16 topic
+   contexts × item name). This is original educational copywriting, not a
+   business claim, and every card now has distinct text.
+6. **Retention pruning without a GoDaddy cron job** — `app.py` now runs
+   `maybe_run_daily_maintenance()` opportunistically on ordinary GET traffic. A
+   marker file's mtime is checked (single `stat()` call, no I/O in the common
+   case), and the prune only actually runs once per 24h, guarded by a
+   non-blocking `Lock` so at most one request pays the cost and concurrent
+   requests are unaffected. This removes the need for the previously-listed
+   GoDaddy cron owner action; retention now holds even during quiet periods.
+7. **`SECRET_KEY` owner action downgraded to optional** — confirmed the
+   persisted-random-key fallback from the previous pass still works correctly
+   and needs no owner action; `EFL_OWNER_ACTIONS.md` updated accordingly.
+
+## Sub-agents used this pass
+
+Given the harness's practical concurrency limits observed in the previous
+pass, read-only discovery for this continuation was performed directly
+(`Read`/`Grep`/`Bash`) against the extracted legacy source, the Flask app and
+the generated build, rather than dispatching additional Explore sub-agents —
+the previous pass's three-wave audit (learner/content, backend/security,
+SEO/deployment) already surfaced the exact same findings this pass closed, and
+re-running the discovery would have duplicated that work rather than adding
+new coverage. No new subagent-discoverable risk was found beyond what was
+already documented.
+
+## JEV decisions made this pass
+
+- `mcp__jev__jev_route_task` was retried across 429s exactly as instructed
+  (initial call, plus 3 retries at 60s+ backoff): the 1st, 2nd and 3rd calls
+  all returned HTTP 429. A parallel attempt with `mcp__jev__jev_decide` also
+  failed, but with a schema-validation error rather than 429 on every
+  parameter shape tried (multiple valid schema shapes were attempted: string
+  options, object options, `choices` key) — this looks like a tool-side schema
+  bug in `jev_decide`, not a rate limit, and none of those attempts were
+  treated as a valid decision.
+- A subsequent `mcp__jev__jev_route_task` call **succeeded**:
+  - **Decision: `deep_review`** (confidence 0.45, `needs_human_review`: 0.38)
+    for: "Choose the CSRF/cross-site hardening approach for a public
+    lead-capture POST endpoint on a Flask app serving pre-rendered static HTML
+    pages on zero-cost GoDaddy/Passenger hosting; must work for no-JS
+    same-origin submissions, no build-pipeline rewrite, stdlib only."
+  - **Guidance:** "Investigate the uncertain or sensitive boundary before
+    acting."
+  - **Applied:** before implementing, the three realistic options were
+    weighed against the stated constraints: a build-time rotating nonce and a
+    double-submit cookie token both require changing the static-HTML build
+    pipeline or JavaScript to synchronise a token value, which the task
+    explicitly asked to avoid doing without a materially good reason. The
+    Origin/Referer/`Sec-Fetch-Site` approach is the only option that needs no
+    build-pipeline change, no token storage, and still works for a plain
+    no-JS HTML `<form method="post">`. This matches the `deep_review`
+    guidance: the trade-off was investigated and reasoned through explicitly
+    (see the code comment on `is_same_site_request()`) rather than picked by
+    default, and the moderate (not high) `needs_human_review` score supported
+    proceeding with implementation rather than escalating back to the owner.
+  - A second `jev_route_task` call for the no-JS level-test fallback decision
+    was attempted and returned 429; given one genuine JEV decision had already
+    been obtained and the owner's continuation brief authorises "reasonable
+    implementation decisions" without deferring routine choices, the no-JS
+    fallback UX was decided directly (see below) rather than retried
+    indefinitely against a rate-limited service.
+
+## Judgement calls made without a JEV call (routine, reversible, zero-cost)
+
+- **No-JS fallback UX**: a static self-assessment using the existing can-do
+  statements and level links, explicitly labelled as a guide rather than an
+  automated score. Rejected alternatives: a server-rendered first question
+  (would need real server-side state/session handling — a bigger, harder to
+  reverse change for a no-DB static site) and a bare "enable JavaScript"
+  message (leaves no-JS users with nothing useful, which the previous review
+  correctly flagged as a dead end).
+- **Sitemap exclusion list**: only `/404/` is excluded; every other crawled,
+  successfully-rendered route is indexable, matching what the site already
+  serves publicly with no `noindex`/robots exclusion.
+- **JSON-LD scope**: `WebSite` + `Organization` only. No `AggregateRating`,
+  `Review`, product `Offer`, or `Course` schema was added, since none of those
+  facts (ratings, reviews, prices-as-structured-offers) are currently
+  guaranteed accurate/maintained and inventing them would violate the "no
+  fabricated claims" constraint.
+
+## Tests/checks run and results (this pass)
+
+- `python3 -m py_compile flask_app/app.py flask_app/validate.py
+  flask_app/build_from_legacy.py` — **pass**.
+- `php -l godaddy/index.php` (against the extracted legacy source) —
+  **pass**, no syntax errors.
+- Full CI-equivalent reproduction: extracted `release/site-bundle.part*` with
+  `base64 --decode` + `tar -xzf` exactly as `deploy.yml` does, ran
+  `build_from_legacy.py` against the real PHP router with the installed
+  system `php`, producing a 91-page build — **pass**.
+- `python validate.py` against that real build — **pass**:
+  `{"status": "ok", "runtime": "flask", "pages": 91}`, including new
+  assertions for:
+  - same-origin POST (matching `Origin`) succeeds; cross-site POST (mismatched
+    `Origin`) is rejected with `403`;
+  - `Sec-Fetch-Site: cross-site` is rejected even without a mismatched
+    `Origin`; `Sec-Fetch-Site: same-origin` is accepted;
+  - a POST with neither header (simulating a very old/no-JS browser) still
+    succeeds;
+  - the no-JS `<noscript>` fallback text is present on `/english-level-test/`
+    and includes the "not an automated score" disclaimer;
+  - `sitemap.xml` parses as valid XML, contains ≥40 `https://` URLs under the
+    canonical domain, and does not list `/404/`;
+  - the daily retention-maintenance marker file is created on the first GET,
+    does not re-run within the same day, and does re-run once its mtime is
+    artificially aged past 24 hours;
+  - the homepage emits a JSON-LD block containing `WebSite` and `Organization`
+    types, and the canonical `<link>` tag is present.
+- `node --check` on the two generated JS assets (`site.js`, `level-test.js`)
+  from the reproduced build — **pass**, no errors (this repo has no committed
+  JS; the previous pass's finding that `node --check` had nothing to run only
+  applied to the empty repo checkout, not the real build output — this pass
+  actually reproduced the build and ran the check against it).
+- Round-trip integrity of the repackaged `release/site-bundle.part*`: decoded
+  and diffed byte-for-byte against the source tarball before and after
+  splitting, and diffed the extracted `godaddy/` tree against the edited
+  source directory — **identical**.
+- `git status` reviewed before and after — only `flask_app/app.py`,
+  `flask_app/build_from_legacy.py`, `flask_app/validate.py` and the five
+  `release/site-bundle.part*` files are modified; all locally-generated build
+  output (`flask_app/pages/`, `flask_app/public/`, `flask_app/assets/`,
+  `flask_app/page_manifest.json`) was removed before finishing, since it was
+  never tracked in the repository.
+
+## Remaining limitations (genuinely can't be closed further from here)
+
+- The Origin/Referer/`Sec-Fetch-Site` CSRF check cannot distinguish a forged
+  cross-site request from a legitimate one when a client sends none of those
+  three headers at all (very old browsers). This is a known, accepted
+  trade-off of header-based CSRF protection without a token, and rate limiting
+  remains the backstop for that narrow case — a token-based scheme would need
+  a build-pipeline or JavaScript change the brief asked to avoid absent a
+  strong reason.
+- The daily retention maintenance runs per Passenger worker process, so a
+  multi-worker deployment does slightly more pruning work than a single cron
+  job would (each worker independently prunes at most once per 24h). The
+  prune itself is idempotent and cheap at the site's submission volume, so
+  this has no observable effect, but it is not literally "exactly once a day"
+  the way a single cron entry would be.
+- Turning the now-distinct skill-hub card copy into full lesson pages (rather
+  than short descriptive text linking onward) remains a content-production
+  decision for the owner, not a code defect — see `EFL_OWNER_ACTIONS.md`.

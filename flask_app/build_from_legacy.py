@@ -15,6 +15,10 @@ from urllib.request import Request, urlopen
 from xml.etree import ElementTree
 
 BASE_URL = "http://127.0.0.1:8099"
+CANONICAL_ORIGIN = "https://englishasaforeignlanguage.com"
+# Routes that exist in the manifest (e.g. the 404 handler, non-slash aliases) but
+# should never be advertised to crawlers.
+SITEMAP_EXCLUDED_ROUTES = {"/404/", "/404"}
 COMPANY_SHORT = "Urban Sky Web Ltd is registered in England and Wales. Company number: 17421062. Registered office: 14/2E Docklands Business Centre, 10–16 Tiller Road, London, E14 8PX."
 COMPANY_SENTENCE = "Urban Sky Web Ltd is a company registered in England and Wales under company number 17421062. Its registered office is 14/2E Docklands Business Centre, 10–16 Tiller Road, London, E14 8PX."
 OPERATOR_ROUTES = {"/about/", "/affiliate-disclosure/", "/terms/"}
@@ -215,6 +219,23 @@ def apply_compliance_updates(route: str, html: str) -> str:
     return html
 
 
+def generate_sitemap(manifest: dict[str, str]) -> str:
+    """Build sitemap.xml from every real crawled+rendered route.
+
+    Replaces copying the legacy static sitemap.xml (which only ever listed a
+    small hardcoded subset) with the actual set of pages the build produced,
+    excluding routes that should not be indexed (currently just the 404 page).
+    """
+    routes = sorted(
+        {route for route in manifest if route.endswith("/") or route == "/"}
+        - SITEMAP_EXCLUDED_ROUTES
+    )
+    entries = "".join(
+        f"<url><loc>{CANONICAL_ORIGIN}{route}</loc></url>" for route in routes
+    )
+    return f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{entries}</urlset>\n'
+
+
 def update_copied_assets(output: Path) -> None:
     site_script = output / "assets" / "js" / "site.js"
     if site_script.exists():
@@ -314,10 +335,13 @@ def build(legacy_root: Path, router: Path, output: Path) -> None:
     if assets.exists():
         shutil.copytree(assets, output / "assets")
         update_copied_assets(output)
-    for name in ("robots.txt", "sitemap.xml", "favicon.ico", "favicon.svg", "apple-touch-icon.png"):
+    for name in ("robots.txt", "favicon.ico", "favicon.svg", "apple-touch-icon.png"):
         source = legacy_root / name
         if source.exists():
             shutil.copy2(source, output / "public" / name)
+
+    manifest = json.loads((output / "page_manifest.json").read_text(encoding="utf-8"))
+    (output / "public" / "sitemap.xml").write_text(generate_sitemap(manifest), encoding="utf-8")
 
 
 def main() -> None:

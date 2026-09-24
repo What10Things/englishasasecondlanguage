@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import csv
 import json
+import re
 import tempfile
+import time
 from pathlib import Path
+from xml.etree import ElementTree
 
 from app import create_app
 
@@ -24,6 +27,15 @@ def main() -> None:
         client = app.test_client()
 
         require_text(client, "/", "English that meets you", "Two clear journeys")
+
+        homepage_html = client.get("/").get_data(as_text=True)
+        ld_match = re.search(r'<script type="application/ld\+json">(.*?)</script>', homepage_html)
+        assert ld_match, "expected a JSON-LD block on the homepage"
+        structured_data = json.loads(ld_match.group(1))
+        graph_types = {node["@type"] for node in structured_data["@graph"]}
+        assert {"WebSite", "Organization"} <= graph_types
+        assert '<link rel="canonical" href="https://englishasaforeignlanguage.com/">' in homepage_html
+
         require_text(client, "/english-level-test/", "24 short questions", "Find your starting point")
         require_text(client, "/learn-english/a1/", "Core grammar")
         require_text(client, "/teach-english/", "Ready-made resources", "Teacher hub")
@@ -107,6 +119,77 @@ def main() -> None:
         homepage = homepage_response.get_data(as_text=True)
         assert "Accept analytics" not in homepage
         assert "Cookie settings" not in homepage
+
+        # Same-origin POST (Origin header matching Host) must succeed.
+        same_origin = client.post(
+            "/api/leads",
+            json={"name": "Origin Test", "email": "origin@example.com", "privacy_ack": "yes"},
+            headers={"Accept": "application/json", "Origin": "http://localhost"},
+        )
+        assert same_origin.status_code == 200, "same-origin POST with matching Origin should succeed"
+
+        # Cross-site POST (Origin header mismatching Host) must be rejected.
+        cross_site = client.post(
+            "/api/leads",
+            json={"name": "Cross Site", "email": "cross@example.com", "privacy_ack": "yes"},
+            headers={"Accept": "application/json", "Origin": "https://evil.example"},
+        )
+        assert cross_site.status_code == 403, "cross-site POST with mismatched Origin should be rejected"
+        assert cross_site.get_json()["success"] is False
+
+        # Sec-Fetch-Site is authoritative when present, even without a matching Origin.
+        cross_site_fetch_metadata = client.post(
+            "/api/leads",
+            json={"name": "Cross Fetch", "email": "crossfetch@example.com", "privacy_ack": "yes"},
+            headers={"Accept": "application/json", "Sec-Fetch-Site": "cross-site"},
+        )
+        assert cross_site_fetch_metadata.status_code == 403
+
+        same_site_fetch_metadata = client.post(
+            "/api/leads",
+            json={"name": "Same Fetch", "email": "samefetch@example.com", "privacy_ack": "yes"},
+            headers={"Accept": "application/json", "Sec-Fetch-Site": "same-origin"},
+        )
+        assert same_site_fetch_metadata.status_code == 200
+
+        # No-JS/very old clients sending neither header must still be able to submit.
+        no_headers = client.post(
+            "/api/leads",
+            json={"name": "No Headers", "email": "noheaders@example.com", "privacy_ack": "yes"},
+        )
+        assert no_headers.status_code == 200
+
+        # No-JS level-test fallback: self-assessment guide present, no scoring claim.
+        require_text(
+            client,
+            "/english-level-test/",
+            "test-noscript",
+            "This is a guide, not an automated score.",
+        )
+
+        sitemap_response = client.get("/sitemap.xml")
+        assert sitemap_response.status_code == 200
+        sitemap_xml = ElementTree.fromstring(sitemap_response.get_data(as_text=True))
+        locs = [element.text for element in sitemap_xml.iter() if element.tag.endswith("loc")]
+        assert len(locs) >= 40, f"expected the full crawled route set in sitemap.xml, got {len(locs)}"
+        assert all(loc.startswith("https://englishasaforeignlanguage.com/") for loc in locs)
+        assert not any(loc.endswith("/404/") for loc in locs), "404 page must not be indexed"
+        assert f"https://englishasaforeignlanguage.com/learn-english/grammar/" in locs
+
+        # Daily retention maintenance runs opportunistically on GET traffic
+        # without a GoDaddy cron job, independent of new submissions.
+        marker = submissions.parent / ".last_retention_prune"
+        client.get("/")
+        assert marker.exists(), "GET traffic should trigger the daily maintenance marker"
+        first_run = marker.stat().st_mtime
+        client.get("/")
+        assert marker.stat().st_mtime == first_run, "maintenance should not re-run within the same day"
+        old_time = time.time() - 90000
+        import os
+
+        os.utime(marker, (old_time, old_time))
+        client.get("/")
+        assert marker.stat().st_mtime > old_time, "maintenance should re-run once the marker is more than 24h old"
 
         print(json.dumps({"status": "ok", "runtime": "flask", "pages": document["pages"]}, sort_keys=True))
 
