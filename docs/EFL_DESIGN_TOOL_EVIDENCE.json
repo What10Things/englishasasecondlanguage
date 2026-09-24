@@ -1,0 +1,52 @@
+{
+  "impeccable": {
+    "status": "used",
+    "evidence": "Ran `impeccable context` (no PRODUCT.md; the brief was used as product context). Loaded craft-floor.md and critique.md. Ran the critique as two isolated sub-agents: Assessment A (design review: fails design-specificity, the CEFR meter is the only subject-specific device) and Assessment B (`impeccable detect --json`, 61 findings on 5 routes). The craft-floor bans drove removing the eyebrows, hard offset shadows and card walls, and adding themed selection/caret/focus. The post-implementation detector gate found 10, those were fixed (layout transition on padding, thin border + wide shadow, disabled-button contrast, footer measure), and the final gate found 1.",
+    "artifact_or_check": "impeccable detect on http://127.0.0.1:5092 (/, /english-level-test/, /learn-english/a1/, /teach-english/, /shop/ at 1280x800 plus 375x812): 61 findings before -> 1 after (shop tab strip 'cramped-padding', classified false positive); source scan of legacy/godaddy/index.php 1 (overused Fraunces) -> 0"
+  },
+  "frontend-design": {
+    "status": "used",
+    "evidence": "Followed its two-pass process: wrote a token/type/ASCII-wireframe plan for three directions grounded in the subject (CEFR scale, can-do statements, gap-fills), then reviewed it against its generic-default list. Consequences: the single-word <em> accent in the H1 was removed, all kicker labels were dropped, the 01/02/03 numbering on non-sequential About values was removed, cards were replaced with ruled index rows, 'spend boldness in one place' became the one ladder entrance animation, and CTAs name their action ('Study A2 English', 'Get the free starter pack').",
+    "artifact_or_check": "/tmp/efl-directions/PLAN.md (directions A/B/C with review pass); implemented in legacy/godaddy/assets/css/site.css and index.php"
+  },
+  "design-taste-frontend": {
+    "status": "used",
+    "evidence": "Applied section 7 (AI tells) and section 3 bias corrections that fit a no-build PHP/CSS site: no oversized H1 (max 6.8rem -> 4.25rem), no 3-equal-card rows (levels, topics and lessons became ladder/index rows), one accent colour for actions, tinted rather than grey text on colour, active-state press feedback, grain overlay removed. Its React/Tailwind/Framer/Phosphor stack rules were deliberately not applied because of the no-build-chain production constraint. Also briefed the anti-slop review sub-agent.",
+    "artifact_or_check": "site.css tokens (h1 clamp(2.35rem..4.25rem), --blue as the only action colour); before/after screenshots /tmp/efl-shots/before and /tmp/efl-shots/final"
+  },
+  "ui-ux-pro-max": {
+    "status": "used",
+    "evidence": "Ran `search.py \"online english language learning education CEFR levels teacher resources marketplace\" --design-system --variance 5 --motion 3 --density 5`. It returned indigo #4F46E5, a testimonials carousel and Baloo 2 / Comic Neue, all rejected as generic, as needing fabricated testimonials, and as aimed at children rather than adults. Ran `--domain typography` (editorial) and `--domain ux` (progress indicators, line length, line height). Kept the 65-75ch measure, the 1.5-1.75 body line-height and progress-indicator guidance, and took Newsreader ('News Editorial' pairing) as the display face once Literata failed the A1 legibility test.",
+    "artifact_or_check": "~/.claude/skills/ui-ux-pro-max/scripts/search.py outputs (design-system, typography, ux domains); measure rules in site.css; Newsreader in assets/fonts"
+  },
+  "web-design-guidelines": {
+    "status": "used",
+    "evidence": "Fetched the current Vercel guidelines (web-interface-guidelines/main/command.md) and reviewed the changed index.php, site.css and level-test.js against them. Fixed: scroll-padding-top so anchors and focus are not hidden under the sticky header, touch-action: manipulation plus an intentional tap highlight, spellcheck=false on email inputs, translate=no on the brand name (EFL learners often auto-translate), theme-color matching the page background, a visible focus ring on every interactive element, font preload with font-display: swap, no `transition: all`. Deliberately not applied: Title Case (the site uses British sentence case).",
+    "artifact_or_check": "/tmp/efl-vercel-guidelines.md (fetched rules); edits in legacy/godaddy/index.php (spellcheck, translate, theme-color) and site.css (scroll-padding, touch-action)"
+  },
+  "web-artifacts-builder": {
+    "status": "used",
+    "evidence": "Ran scripts/init-artifact.sh (React 18 + TS + Vite + Tailwind + shadcn) and scripts/bundle-artifact.sh in an isolated /tmp/efl-proto. pnpm had to be installed and Parcel's native build scripts allowed. Built one temporary prototype of the homepage hero and routes section in three switchable directions (?d=a|b|c) using the real level data, then screenshotted it at 1440x900 and 375x812 to compare hierarchy. The accepted direction A was translated back into PHP (level_ladder() helper) and plain CSS. The prototype directory and its local server were deleted before finishing; no framework code entered the repo.",
+    "artifact_or_check": "bundle.html built (278KB) then deleted with /tmp/efl-proto; comparison screenshots /tmp/efl-directions/dir-{a,b,c}-{d,m}.png and dirs-mobile.png"
+  },
+  "playwright": {
+    "status": "used",
+    "evidence": "Loaded the playwright-cli skill and used the installed Microsoft Playwright (Chromium) through Node scripts. Baseline and final screenshots of 11 routes at 375x812, 768x1024 and 1440x900 with font-load, console-error and overflow checks (baseline: CSP font errors on every page; final: both fonts on 33/33 renders, 0 errors, no overflow). A glyph test found Literata's '1' identical to 'l' ('A1' read as 'Al'), which led to the Newsreader switch. Interaction runs at all three sizes: mobile menu aria-expanded, ladder -> level page, level-meter switching, header CTA -> test, gap-fill, all 24 questions -> result, teacher route to the starter pack form (validation only, not submitted), keyboard tab order with a visible focus ring, reduced motion with 0 running animations.",
+    "artifact_or_check": "/tmp/efl-shots/shoot.js, shoot2.js, interact.js, glyph.js; screenshots /tmp/efl-shots/before (66), /tmp/efl-shots/final (77)"
+  },
+  "huashu-design": {
+    "status": "used",
+    "evidence": "Loaded SKILL.md and followed its direction-advisor rule of three differentiated directions rendered as real visuals rather than described (graded reader / workbook / route map). Used its anti-slop table and 'system first, no filler' principle to reject the decorative orbit/blob hero, the 'data slop' stickers ('15 min', '2 paths') and iconography slop, and its 'one detail at 120%' principle to put the effort into the CEFR ladder. Its stop-for-user-choice step was replaced by the JEV decision as the brief requires. Used for direction and critique only, not as a production stack.",
+    "artifact_or_check": "/tmp/efl-directions/PLAN.md and dir-*.png direction boards; rejected hero elements removed from legacy/godaddy/index.php"
+  },
+  "jev": {
+    "status": "used",
+    "evidence": "After evidence gathering and before implementation, mcp__jev__jev_check_research evaluated the claim 'Direction A graded reader site-wide, B gap-fill only in the level test, C rejected' with 7 evidence items. Result: decision accept, confidence 0.63, probabilities accept 0.75 / verify_more 0.22 / reject 0.03. mcp__jev__jev_decide was tried first but rejected every option schema ('provide 2-255 choice options'), so no decision is claimed from it. The initial routing advisory (opus-medium, 0.58) came with the brief. A jev_review_completion call is recorded in the report.",
+    "artifact_or_check": "JEV decision {decision: accept, confidence: 0.63}; implemented direction documented in efl/DESIGN.md and docs/EFL_DESIGN_PASS_REPORT.md section 3"
+  },
+  "subagents": {
+    "status": "used",
+    "evidence": "Six Task sub-agents (general-purpose, Sonnet, read-only for project files, no nested spawning, at most two concurrent). Impeccable critique A (design review) and B (detector) ran in isolation. After implementation: anti-slop/typography, responsive/a11y/keyboard (Playwright), learner/teacher journeys (Playwright), and regression/deployment safety (reproduced CI). Fixes that came from them: validate.py assertions that would have failed CI; the 404 page bypassing the compliance rewrites (cookie banner leak); 44px footer targets; level-meter contrast; CTA wording; result-screen hierarchy with focus management. One P0 claim ('learn hub not migrated') was checked against the rendered HTML and rejected as a misread.",
+    "artifact_or_check": "Review findings and dispositions in docs/EFL_DESIGN_PASS_REPORT.md section 6; validate.py exit 0 after fixes; /tmp/efl-a11y and /tmp/efl-journeys scratch evidence"
+  }
+}

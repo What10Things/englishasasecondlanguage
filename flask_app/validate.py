@@ -26,7 +26,7 @@ def main() -> None:
         app = create_app({"TESTING": True, "SUBMISSIONS_PATH": str(submissions)})
         client = app.test_client()
 
-        require_text(client, "/", "English that meets you", "Two clear journeys")
+        require_text(client, "/", "English that meets you", "Take the free level test", "Get the free starter pack")
 
         homepage_html = client.get("/").get_data(as_text=True)
         ld_match = re.search(r'<script type="application/ld\+json">(.*?)</script>', homepage_html)
@@ -38,7 +38,7 @@ def main() -> None:
 
         require_text(client, "/english-level-test/", "24 short questions", "Find your starting point")
         require_text(client, "/learn-english/a1/", "Core grammar")
-        require_text(client, "/teach-english/", "Ready-made resources", "Teacher hub")
+        require_text(client, "/teach-english/", "Ready-made resources", "Find what your lesson needs")
         require_text(
             client,
             "/privacy-policy/",
