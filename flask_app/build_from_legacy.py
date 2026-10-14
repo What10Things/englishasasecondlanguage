@@ -342,8 +342,18 @@ def build(legacy_root: Path, router: Path, output: Path) -> None:
         if source.exists():
             shutil.copy2(source, output / "public" / name)
 
+    # Compile all language editions on every release; paid ZIPs are never public assets.
+    shutil.copytree(Path(__file__).parent / "learning", output / "learning", ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+    from learning.generate import compile_products
+    products = compile_products(output / "private_products")
+    (output / "private_products" / ".htaccess").write_text("Require all denied\n")
+    (output / "learning" / ".htaccess").write_text("Require all denied\n")
+    (output / "storage" / ".htaccess").write_text("Require all denied\n")
     manifest = json.loads((output / "page_manifest.json").read_text(encoding="utf-8"))
-    (output / "public" / "sitemap.xml").write_text(generate_sitemap(manifest), encoding="utf-8")
+    extra = ["/study/", "/resources/"] + [f"/practice/{p['level'].lower()}/" for p in products] + [f"/resources/{p['id']}/" for p in products]
+    # Extra URLs are real dynamic routes, not snapshot filenames.
+    sitemap_manifest = dict(manifest, **{path: "dynamic" for path in extra})
+    (output / "public" / "sitemap.xml").write_text(generate_sitemap(sitemap_manifest), encoding="utf-8")
 
 
 def main() -> None:

@@ -289,13 +289,19 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
         if response.mimetype == "text/html":
             if request.method in ("GET", "HEAD"):
-                response.headers["Cache-Control"] = "public, max-age=300, must-revalidate"
+                response.headers.setdefault("Cache-Control", "public, max-age=300, must-revalidate")
             else:
                 response.headers["Cache-Control"] = "no-store"
         elif response.mimetype not in ("application/json",):
             response.headers.setdefault("Cache-Control", "public, max-age=86400")
+        if request.path.startswith(("/purchase/", "/checkout/")):
+            response.headers["Cache-Control"] = "private, no-store"
+            response.headers["Referrer-Policy"] = "no-referrer"
+            response.headers["X-Robots-Tag"] = "noindex, nofollow"
         return response
 
+    from learning.web import install
+    install(app)
     return app
 
 

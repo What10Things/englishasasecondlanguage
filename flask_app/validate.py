@@ -114,7 +114,7 @@ def main() -> None:
         homepage_response = client.get("/")
         assert homepage_response.headers.get("Content-Security-Policy")
         assert homepage_response.headers.get("Strict-Transport-Security")
-        assert "max-age=300" in homepage_response.headers.get("Cache-Control", "")
+        assert "no-store" in homepage_response.headers.get("Cache-Control", "")
 
         homepage = homepage_response.get_data(as_text=True)
         assert "Accept analytics" not in homepage
@@ -159,12 +159,14 @@ def main() -> None:
         )
         assert no_headers.status_code == 200
 
-        # No-JS level-test fallback: self-assessment guide present, no scoring claim.
+        # The level check now uses a server-rendered form and works without JS.
         require_text(
             client,
             "/english-level-test/",
-            "test-noscript",
-            "This is a guide, not an automated score.",
+            'action="/english-level-test/" method="post"',
+            'name="csrf"',
+            'does not assess listening, speaking or writing',
+
         )
 
         sitemap_response = client.get("/sitemap.xml")

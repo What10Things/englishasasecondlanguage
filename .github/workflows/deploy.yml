@@ -5,6 +5,8 @@ on:
     branches:
       - main
   workflow_dispatch:
+  schedule:
+    - cron: '17 5 * * 1'
 
 permissions:
   contents: read
@@ -54,6 +56,8 @@ jobs:
           cp flask_app/passenger_wsgi.py deploy/passenger_wsgi.py
           cp flask_app/requirements.txt deploy/requirements.txt
           cp flask_app/validate.py deploy/validate.py
+          cp flask_app/test_learning.py deploy/test_learning.py
+          cp flask_app/browser_learning.py deploy/browser_learning.py
 
           mkdir -p deploy/tmp deploy/storage
           date -u +'%Y-%m-%dT%H:%M:%SZ' > deploy/tmp/restart.txt
@@ -67,6 +71,9 @@ jobs:
           # DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
 
           Options -Indexes
+          <FilesMatch "\.(py|pyc)$">
+            Require all denied
+          </FilesMatch>
           <IfModule mod_headers.c>
             Header always set X-Content-Type-Options "nosniff"
             Header always set X-Frame-Options "SAMEORIGIN"
@@ -84,9 +91,26 @@ jobs:
       - name: Validate Flask application
         run: |
           python -m py_compile deploy/app.py deploy/passenger_wsgi.py
-          (cd deploy && python validate.py)
+          (cd deploy && python validate.py && python test_learning.py)
+          node --check deploy/learning/assets/language.js
           node --check deploy/assets/js/site.js
           node --check deploy/assets/js/level-test.js
+
+      - name: Browser customer journey gate
+        run: |
+          python -m pip install 'playwright>=1.50,<2'
+          python -m playwright install --with-deps chromium
+          (cd deploy && python browser_learning.py)
+
+      - name: Preserve product and browser verification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: efl-resource-verification
+          path: |
+            deploy/private_products/build-report.json
+            deploy/browser-evidence/
+          retention-days: 14
 
       - name: Validate deployment secrets
         env:
@@ -142,6 +166,11 @@ jobs:
             **/__pycache__/**
             **/*.pyc
             **/storage/submissions.csv
+            **/storage/.secret_key
+            **/storage/.last_retention_prune
+            **/browser-evidence/**
+            **/test_learning.py
+            **/browser_learning.py
 
       - name: Force Passenger configuration and restart
         env:
@@ -163,6 +192,9 @@ jobs:
               '/english-level-test/': ('24 short questions', 'Find your starting point'),
               '/learn-english/a1/': ('Core grammar',),
               '/teach-english/': ('Ready-made resources', 'Find what your lesson needs'),
+              '/resources/?lang=fr': ('Boutique', 'a1-practice-v1'),
+              '/practice/c2/?lang=pl': ('Prawidłowa odpowiedź',),
+              '/study/?lang=es': ('Aprende inglés a tu nivel',),
           }
           last_error = ''
           for attempt in range(1, 26):
@@ -183,7 +215,7 @@ jobs:
               for path, phrases in page_checks.items():
                   try:
                       request = Request(
-                          f'https://englishasaforeignlanguage.com{path}?deploy={int(time.time())}',
+                          f'https://englishasaforeignlanguage.com{path}{"&" if "?" in path else "?"}deploy={int(time.time())}',
                           headers={
                               'Cache-Control': 'no-cache, no-store, max-age=0',
                               'Pragma': 'no-cache',
