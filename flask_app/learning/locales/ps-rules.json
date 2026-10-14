@@ -1,0 +1,20 @@
+{
+  "be": "له I سره am، له he/she/it یا یوه کس سره is، او له you/we/they یا څو کسانو سره are وکاروئ.",
+  "present": "په مثبتو present simple جملو کې له he/she/it سره فعل ته -s یا -es ورزیات کړئ. له does not وروسته د فعل اصلي بڼه وکاروئ. له I/you/we/they سره اصلي بڼه راځي.",
+  "plural": "د یوې شي لپاره there is او د څو شیانو لپاره there are وکاروئ. له شمېرل کېدونکي مفرد نوم مخکې، که پیل یې په بېواک غږ وي a او که په خپلواک غږ وي an وکاروئ.",
+  "past": "په تېر بشپړ شوي وخت کې د پای ته رسېدلو پېښو لپاره past simple وکاروئ. Went او bought د تېر وخت بې قاعدې بڼې دي. له did یا did not وروسته د فعل اصلي بڼه راځي.",
+  "comparison": "د دوو شیانو د پرتله کولو لپاره comparative وکاروئ. لنډ صفتونه عموماً -er اخلي او له اوږدو صفتونو مخکې more راځي. Good په better بدلېږي. more او د -er بڼه یو ځای مه کاروئ.",
+  "plans": "د پلان لپاره am/is/are going to او ورپسې د فعل اصلي بڼه وکاروئ. له water غوندې نه شمېرل کېدونکو نومونو سره much او له bags غوندې جمع شمېرل کېدونکو نومونو سره many راځي.",
+  "perfect": "تر اوسه د روان حالت یا له ټاکلي تېر وخت پرته د تجربې لپاره present perfect یعنې have/has + past participle وکاروئ. Since د پیل ټکی او for د وخت موده ښيي.",
+  "conditional": "د راتلونکي واقعي امکان لپاره if + present simple او په اصلي جمله کې will + د فعل اصلي بڼه وکاروئ. له should غوندې modal وروسته اصلي فعل له to پرته راځي.",
+  "relative": "Who کس ته اشاره کوي؛ whose ملکیت ښيي؛ where ځای ته اشاره کوي. له enjoy وروسته د فعل -ing بڼه وکاروئ.",
+  "passive": "په مجهول جوړښت کې be + past participle راځي. د وخت سره سم د be زمان وټاکئ. له بل تېر عمل څخه مخکې عمل لپاره په past perfect passive کې had been + past participle راځي.",
+  "unreal": "د اوسني غیر واقعي حالت لپاره if + past simple او would + د فعل اصلي بڼه وکاروئ. د تېر غیر واقعي حالت لپاره if + past perfect او would have + past participle وکاروئ.",
+  "deduction": "د تېر وخت د قوي مثبت اټکل لپاره must have + past participle او د ناممکن والي لپاره cannot have وکاروئ. په تېره reported speech کې will عموماً په would او am/is په was بدلېږي.",
+  "inversion": "که never، rarely، not until یا only then غوندې منفي یا محدودوونکی عبارت په پیل کې وي، په اصلي جمله کې د مرستیال فعل او فاعل ترتیب واړوئ. په past simple کې چې بل مرستیال فعل نه وي، did + اصلي فعل وکاروئ.",
+  "focus": "په what-cleft کې له what څخه پیل شوې جمله د فاعل په توګه راځي او ورپسې عموماً is یا was وي. په it-cleft کې it is/was یو جز روښانه کوي او ورپسې د that جمله راځي. له سربل وروسته نوم یا -ing بڼه وکاروئ.",
+  "concession": "له although او even though وروسته د فاعل او فعل لرونکې جمله راځي. له despite او in spite of وروسته نوم یا -ing عبارت راځي. په رسمي شرطونو کې had + فاعل + past participle د if + past perfect ځای نیولای شي.",
+  "nuance": "د دقیقې مانا او د کلمو د ترکیب له مخې وټاکئ: equivocal مبهم ته وايي؛ tacit هغه څه دي چې له ویلو پرته پوهېدل کېږي؛ tenuous کمزوري ته وايي؛ cogent روښانه او قانع کوونکی استدلال ښيي.",
+  "collocation": "ثابت ترکیبونه مهم دي: bear in mind یعنې په یاد ساتل؛ call into question یعنې شک پرې کول؛ draw a distinction یعنې توپیر څرګندول؛ tally with یعنې سمون لرل.",
+  "rhetoric": "رسمي منل او موخه ځانګړي جوړښتونه لري: be that as it may د مخالفت مخکې یو ټکی مني؛ له with a view to وروسته -ing راځي؛ له lest وروسته should + اصلي فعل راتلای شي؛ په پیل کې so + صفت د ترتیب د بدلېدو لامل کېدای شي."
+}

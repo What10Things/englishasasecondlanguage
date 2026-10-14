@@ -34,9 +34,23 @@ try:
         page.goto('http://127.0.0.1:5071/resources/?lang=fr')
         page.set_viewport_size({'width':1440,'height':900})
         page.screenshot(path='browser-evidence/french-shop.png',full_page=True)
+        from learning.catalog import LANGUAGES, direction
+        for lang in ('hi','ur','ps','zh-Hans','zh-Hant'):
+            page.set_viewport_size({'width':390,'height':844})
+            page.goto('http://127.0.0.1:5071/practice/b1/?lang='+lang)
+            assert page.locator('html').get_attribute('dir') == direction(lang)
+            page.locator('summary').first.click()
+            assert page.locator('h3[lang=en]').first.evaluate('(el)=>getComputedStyle(el).direction') == 'ltr'
+            assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), lang
+            page.locator('[data-language-open]').click()
+            assert page.locator('#language-dialog a').count() == len(LANGUAGES)
+            page.screenshot(path=f'browser-evidence/{lang}-picker.png',full_page=True)
+            page.keyboard.press('Escape')
+            page.screenshot(path=f'browser-evidence/{lang}-practice.png',full_page=True)
         # Print layout: inspect each local language edition at A4 viewport size.
         from learning.generate import document
-        for lang in ('en','es','fr','pl'):
+        page.set_viewport_size({'width':794,'height':1123})
+        for lang in LANGUAGES:
             page.set_content(document('C2',lang,'answers'))
             page.emulate_media(media='print')
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')

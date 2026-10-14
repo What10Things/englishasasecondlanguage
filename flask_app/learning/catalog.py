@@ -18,7 +18,7 @@ ROWS = {
 'practice': ['Free practice', 'Práctica gratuita', 'Exercices gratuits', 'Bezpłatne ćwiczenia'],
 'pick_level': ['Choose your level', 'Elige tu nivel', 'Choisissez votre niveau', 'Wybierz poziom'],
 'pack': ['Grammar and precision practice pack', 'Pack de práctica de gramática y precisión', 'Dossier de grammaire et de précision', 'Pakiet ćwiczeń gramatycznych i językowych'],
-'pack_intro': ['A focused printable resource, not a complete course. Each level includes 12 English questions, explained answers, two writing tasks and a 45-minute teacher plan. All four language editions are included.', 'Un recurso imprimible específico, no un curso completo. Cada nivel incluye 12 preguntas en inglés, respuestas explicadas, dos tareas de escritura y un plan docente de 45 minutos. Incluye las cuatro versiones lingüísticas.', 'Une ressource imprimable ciblée, pas un cours complet. Chaque niveau comprend 12 questions en anglais, des réponses expliquées, deux tâches écrites et un plan de cours de 45 minutes. Les quatre versions linguistiques sont incluses.', 'Ukierunkowany materiał do druku, a nie pełny kurs. Każdy poziom zawiera 12 pytań po angielsku, odpowiedzi z wyjaśnieniami, dwa zadania pisemne i plan lekcji na 45 minut. Wszystkie cztery wersje językowe są w zestawie.'],
+'pack_intro': ['A focused printable resource, not a complete course. Each level includes 12 English questions, explained answers, two writing tasks and a 45-minute teacher plan. All available language editions are included.', 'Un recurso imprimible específico, no un curso completo. Cada nivel incluye 12 preguntas en inglés, respuestas explicadas, dos tareas de escritura y un plan docente de 45 minutos. Incluye todas las versiones lingüísticas disponibles.', 'Une ressource imprimable ciblée, pas un cours complet. Chaque niveau comprend 12 questions en anglais, des réponses expliquées, deux tâches écrites et un plan de cours de 45 minutes. Toutes les versions linguistiques disponibles sont incluses.', 'Ukierunkowany materiał do druku, a nie pełny kurs. Każdy poziom zawiera 12 pytań po angielsku, odpowiedzi z wyjaśnieniami, dwa zadania pisemne i plan lekcji na 45 minut. Wszystkie dostępne wersje językowe są w zestawie.'],
 'preview': ['View free sample', 'Ver muestra gratuita', 'Voir un extrait gratuit', 'Zobacz bezpłatną próbkę'],
 'includes': ['What you receive', 'Qué incluye', 'Contenu du dossier', 'Zawartość pakietu'],
 'formats': ['ZIP download containing printable HTML worksheets, separate answer keys and teacher notes. Open in a browser and print or save as PDF. No software subscription needed.', 'Archivo ZIP con fichas HTML imprimibles, soluciones separadas y notas docentes. Ábrelo en un navegador e imprime o guarda como PDF. No necesitas suscripción a ningún programa.', 'Fichier ZIP avec fiches HTML imprimables, corrigés séparés et notes pédagogiques. Ouvrez-les dans un navigateur pour imprimer ou enregistrer en PDF. Aucun abonnement logiciel nécessaire.', 'Plik ZIP z arkuszami HTML do druku, oddzielnymi odpowiedziami i wskazówkami dla nauczyciela. Otwórz w przeglądarce, wydrukuj lub zapisz jako PDF. Nie wymaga abonamentu.'],
@@ -38,7 +38,7 @@ ROWS = {
 'level_note': ['Levels describe the intended practice focus. These packs and the short level check are not accredited qualifications or complete CEFR assessments.', 'Los niveles indican el enfoque de la práctica. Estos packs y la breve prueba no son titulaciones acreditadas ni evaluaciones completas del MCER.', 'Les niveaux indiquent l’objectif des exercices. Ces dossiers et le court test ne sont ni des certifications reconnues ni des évaluations complètes du CECRL.', 'Poziomy opisują zakres ćwiczeń. Pakiety i krótki test nie są akredytowanymi kwalifikacjami ani pełną oceną według CEFR.'],
 'fallback': ['This older page is currently in English. Use the translated practice and resources below.', 'Esta página anterior está actualmente en inglés. Utiliza los ejercicios y recursos traducidos que aparecen a continuación.', 'Cette ancienne page est actuellement en anglais. Utilisez les exercices et ressources traduits ci-dessous.', 'Ta starsza strona jest obecnie po angielsku. Skorzystaj z przetłumaczonych ćwiczeń i materiałów poniżej.'],
 'download': ['Download your pack', 'Descargar tu pack', 'Télécharger votre dossier', 'Pobierz pakiet'],
-'paid': ['Payment verified. Your download includes all four languages. Keep this private page link for access to your purchase.', 'Pago verificado. La descarga incluye los cuatro idiomas. Guarda el enlace privado de esta página para acceder a tu compra.', 'Paiement vérifié. Le téléchargement comprend les quatre langues. Conservez ce lien privé pour accéder à votre achat.', 'Płatność potwierdzona. Plik zawiera wszystkie cztery języki. Zachowaj prywatny link do tej strony, aby mieć dostęp do zakupu.'],
+'paid': ['Payment verified. Your download includes the languages supplied with your purchased edition. Keep this private page link for access to your purchase.', 'Pago verificado. La descarga incluye los idiomas de la edición comprada. Guarda el enlace privado de esta página para acceder a tu compra.', 'Paiement vérifié. Le téléchargement comprend les langues de l’édition achetée. Conservez ce lien privé pour accéder à votre achat.', 'Płatność potwierdzona. Plik zawiera języki zakupionej edycji. Zachowaj prywatny link do tej strony, aby mieć dostęp do zakupu.'],
 'payment_error': ['We could not verify a completed payment. No download has been unlocked. If you were charged, contact us with your Stripe receipt.', 'No hemos podido verificar un pago completado. No se ha desbloqueado ninguna descarga. Si se te ha cobrado, contacta con nosotros con el recibo de Stripe.', 'Nous n’avons pas pu vérifier un paiement terminé. Aucun téléchargement n’a été débloqué. Si vous avez été débité, contactez-nous avec votre reçu Stripe.', 'Nie udało się potwierdzić zakończonej płatności. Pobieranie nie zostało odblokowane. Jeśli naliczono opłatę, skontaktuj się z nami, podając potwierdzenie Stripe.'],
 'support': ['Contact and purchase help', 'Contacto y ayuda con compras', 'Contact et aide aux achats', 'Kontakt i pomoc przy zakupie'],
 'back': ['Back to resources', 'Volver a los recursos', 'Retour aux ressources', 'Powrót do materiałów'],
@@ -66,3 +66,28 @@ ROWS.update({
 })
 UI = {code: {key: row[i] for key, row in ROWS.items()} for i, code in enumerate(LANGUAGES)}
 LEVEL_LABELS = dict(zip(LEVELS, ('beginner','elementary','intermediate','upper','advanced','proficiency')))
+
+# Explicit written-language tags distinguish Chinese scripts, not spoken dialects.
+import json
+from pathlib import Path
+NEW_LANGUAGES = {'hi':'हिन्दी', 'ur':'اردو', 'ps':'پښتو', 'zh-Hans':'简体中文', 'zh-Hant':'繁體中文'}
+RTL_LANGUAGES = frozenset({'ur', 'ps'})
+for code, name in NEW_LANGUAGES.items():
+    translation = json.loads((Path(__file__).parent / 'locales' / f'{code}.json').read_text(encoding='utf-8'))
+    if set(translation) != set(UI['en']) or not all(translation.values()):
+        raise ValueError(f'Incomplete UI translations for {code}')
+    LANGUAGES[code] = name
+    UI[code] = translation
+
+def direction(code):
+    return 'rtl' if code in RTL_LANGUAGES else 'ltr'
+
+
+def text_html(text, lang):
+    """Escape content, isolating English grammar terms inside RTL explanations."""
+    from html import escape
+    import re
+    if lang not in RTL_LANGUAGES:
+        return escape(text)
+    parts = re.split(r'([A-Za-z]+(?:[ /+.-]+[A-Za-z]+)*)', text)
+    return ''.join(f'<bdi dir="ltr" lang="en">{escape(part)}</bdi>' if i % 2 else escape(part) for i, part in enumerate(parts))

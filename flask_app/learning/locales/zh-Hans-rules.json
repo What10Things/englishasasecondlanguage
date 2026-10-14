@@ -1,0 +1,20 @@
+{
+  "be": "I搭配am；he/she/it或单个人搭配is；you/we/they或多个人搭配are。",
+  "present": "一般现在时的肯定句中，he/she/it后的动词加-s或-es。does not后使用动词原形。I/you/we/they后也使用原形。",
+  "plural": "单个事物用there is，复数事物用there are。单数可数名词以辅音音素开头时用a，以元音音素开头时用an；判断依据是发音。",
+  "past": "在已结束的过去时间发生并完成的事件用一般过去时。Went和bought是不规则过去式。did或did not后用动词原形。",
+  "comparison": "比较两个事物用比较级。短形容词通常加-er，长形容词通常在前面加more。Good的比较级是better。不要将more与-er比较级同时使用。",
+  "plans": "表达计划时用am/is/are going to加动词原形。Much搭配water等不可数名词；many搭配bags等复数可数名词。",
+  "perfect": "持续到现在的情况，或没有指定已结束过去时间的经历，用现在完成时（have/has + 过去分词）。Since表示起点，for表示持续时间。",
+  "conditional": "表达真实的未来可能性时，if从句用一般现在时，主句用will加动词原形。Should等情态动词后用不带to的动词原形。",
+  "relative": "Who指人，whose表示所属关系，where指地点。Enjoy后接动词的-ing形式。",
+  "passive": "被动语态使用be加过去分词。根据时间选择be的时态。表示早于另一个过去动作的被动动作时，用had been加过去分词。",
+  "unreal": "表示与现在事实不符的情况时，用if加一般过去时，主句用would加动词原形。表示与过去事实不符的情况时，用if加过去完成时，主句用would have加过去分词。",
+  "deduction": "对过去作肯定性较强的推断时，用must have加过去分词；表示不可能时，用cannot have。在以过去时引述的间接引语中，will通常变为would，am/is通常变为was。",
+  "inversion": "Never、rarely、not until或only then等否定或限制性表达置于句首时，主句中的助动词放在主语之前。一般过去时没有其他助动词时，用did加动词原形。",
+  "focus": "What强调句以what从句作主语，后面通常接is或was。It强调句用it is/was突出某个成分，再接that从句。介词后接名词或-ing形式。",
+  "concession": "Although和even though后接含主语和谓语的从句。Despite和in spite of后接名词或-ing短语。在正式条件句中，had加主语加过去分词可替代if加过去完成时。",
+  "nuance": "根据精确含义和搭配选词：equivocal表示模棱两可；tacit表示心照不宣；tenuous表示薄弱；cogent形容清晰且有说服力的论证。",
+  "collocation": "注意固定搭配：bear in mind意为牢记；call into question意为质疑；draw a distinction意为作出区分；tally with意为与某事吻合。",
+  "rhetoric": "正式的让步和目的表达有特定结构：be that as it may先承认一点再提出异议；with a view to后接-ing形式；lest后可用should加动词原形；so加形容词置于句首时可引起倒装。"
+}

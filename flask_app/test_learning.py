@@ -11,7 +11,7 @@ from zipfile import ZipFile
 from app import create_app
 from learning.generate import compile_products
 from learning.bank import questions_for
-from learning.catalog import LANGUAGES, LEVELS, UI
+from learning.catalog import LANGUAGES, LEVELS, UI, direction, text_html
 from learning.web import test_questions
 
 class LearningTests(unittest.TestCase):
@@ -30,6 +30,13 @@ class LearningTests(unittest.TestCase):
         self.client.get('/english-level-test/')
         with self.client.session_transaction() as s:
             return s['csrf']
+    def test_previous_editions_retained(self):
+        root=Path(self.app.config['PRODUCTS_DIR'])
+        lock=json.loads((Path(__file__).parent/'learning'/'frozen_v1'/'edition-lock.json').read_text())
+        for product_id, digest in lock.items():
+            self.assertEqual(hashlib.sha256((root/(product_id+'.zip')).read_bytes()).hexdigest(),digest)
+        self.assertEqual(self.client.get('/resources/a1-practice-v1/').status_code,302)
+
     def test_language_choice_persistence_and_no_open_redirect(self):
         self.assertIn('data-first-visit="true"',self.client.get('/').text)
         r=self.client.get('/language/pl/?next=//evil.example')
@@ -50,11 +57,12 @@ class LearningTests(unittest.TestCase):
     def test_all_level_language_customer_routes(self):
         for lang in LANGUAGES:
             for level in LEVELS:
-                for prefix in ('practice/'+level.lower(),'resources/'+level.lower()+'-practice-v1'):
+                for prefix in ('practice/'+level.lower(),'resources/'+level.lower()+'-practice-v2'):
                     r=self.client.get('/'+prefix+'/?lang='+lang)
                     self.assertEqual(r.status_code,200)
-                    self.assertIn(questions_for(level)[0]['explanations'][lang],r.text)
+                    self.assertIn(text_html(questions_for(level)[0]['explanations'][lang],lang),r.text)
                     self.assertIn('lang="en"',r.text)
+                    self.assertIn(f'<html lang="{lang}" dir="{direction(lang)}">',r.text)
                     self.assertNotIn('<button class="button" type="submit">'+UI[lang]['buy'],r.text)
     def test_csrf_and_server_scoring_without_js(self):
         qs=test_questions()
@@ -69,17 +77,17 @@ class LearningTests(unittest.TestCase):
         self.assertEqual(self.client.post('/english-level-test/',data=data).status_code,422)
         self.assertEqual(self.client.post('/english-level-test/',data=data,headers={'Origin':'https://evil.example'}).status_code,403)
     def test_download_denied_and_checkout_closed(self):
-        for path in ('/private_products/a1-practice-v1.zip','/purchase/download/?session_id=forged'):
+        for path in ('/private_products/a1-practice-v2.zip','/purchase/download/?session_id=forged'):
             self.assertIn(self.client.get(path).status_code,(403,404))
-        self.assertEqual(self.client.post('/checkout/a1-practice-v1/',data={'csrf':self.token(),'digital_consent':'yes'}).status_code,503)
+        self.assertEqual(self.client.post('/checkout/a1-practice-v2/',data={'csrf':self.token(),'digital_consent':'yes'}).status_code,503)
     def test_deterministic_products_with_four_complete_editions(self):
         for p in self.products:
             file=Path(self.app.config['PRODUCTS_DIR'])/p['filename']
             with ZipFile(file) as z:
-                self.assertEqual(len(z.namelist()),13)
+                self.assertEqual(len(z.namelist()),3*len(LANGUAGES)+1)
                 for lang in LANGUAGES:
                     text=z.read(f'{p["id"]}/{lang}/answers.html').decode()
-                    self.assertIn(questions_for(p['level'])[0]['explanations'][lang],text)
+                    self.assertIn(text_html(questions_for(p['level'])[0]['explanations'][lang],lang),text)
             before=hashlib.sha256(file.read_bytes()).hexdigest()
             compile_products(Path(self.app.config['PRODUCTS_DIR']))
             self.assertEqual(before,hashlib.sha256(file.read_bytes()).hexdigest())

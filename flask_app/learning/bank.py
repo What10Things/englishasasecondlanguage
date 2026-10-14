@@ -2,7 +2,7 @@
 from .catalog import LANGUAGES
 
 def rule(key, texts, questions):
-    return {'id': key, 'explanations': dict(zip(LANGUAGES, texts)), 'questions': [
+    return {'id': key, 'explanations': dict(zip(('en','es','fr','pl'), texts)), 'questions': [
         {'id': f'{key}-{i+1}', 'prompt': prompt, 'options': options.split('|'), 'answer': answer}
         for i, (prompt, options, answer) in enumerate(questions)]}
 
@@ -148,3 +148,16 @@ def validate_bank():
                 assert len(set(q['options'])) == 3
                 assert 0 <= q['answer'] < len(q['options'])
     return len(ids)
+
+# Extend every authored rule, with no silent English fallback.
+import json
+from pathlib import Path
+from .catalog import NEW_LANGUAGES
+for code in NEW_LANGUAGES:
+    translations = json.loads((Path(__file__).parent / 'locales' / f'{code}-rules.json').read_text(encoding='utf-8'))
+    ids = {r['id'] for rules in BANK.values() for r in rules}
+    if set(translations) != ids or not all(translations.values()):
+        raise ValueError(f'Incomplete answer explanations for {code}')
+    for rules in BANK.values():
+        for r in rules:
+            r['explanations'][code] = translations[r['id']]

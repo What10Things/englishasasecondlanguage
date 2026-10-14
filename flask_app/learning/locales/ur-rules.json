@@ -1,0 +1,20 @@
+{
+  "be": "I کے ساتھ am، he/she/it یا ایک شخص کے ساتھ is، اور you/we/they یا کئی افراد کے ساتھ are استعمال کریں۔",
+  "present": "مثبت present simple جملوں میں he/she/it کے ساتھ فعل میں -s یا -es لگائیں۔ does not کے بعد فعل کی بنیادی شکل استعمال کریں۔ I/you/we/they کے ساتھ بنیادی شکل آتی ہے۔",
+  "plural": "ایک چیز کے لیے there is اور کئی چیزوں کے لیے there are استعمال کریں۔ واحد قابلِ شمار اسم کی ابتدا حروفِ صحیح کی آواز سے ہو تو a اور مصوتے کی آواز سے ہو تو an لگائیں۔",
+  "past": "گزشتہ مکمل وقت میں ختم ہونے والے واقعات کے لیے past simple استعمال کریں۔ Went اور bought بے قاعدہ ماضی کی شکلیں ہیں۔ did یا did not کے بعد فعل کی بنیادی شکل آتی ہے۔",
+  "comparison": "دو چیزوں کا موازنہ کرنے کے لیے comparative استعمال کریں۔ مختصر صفات میں عموماً -er اور لمبی صفات سے پہلے more آتا ہے۔ Good کی شکل better ہے۔ more اور -er والی شکل ایک ساتھ نہ لائیں۔",
+  "plans": "منصوبے کے لیے am/is/are going to کے بعد فعل کی بنیادی شکل استعمال کریں۔ water جیسے ناقابلِ شمار اسم کے ساتھ much اور bags جیسے جمع قابلِ شمار اسم کے ساتھ many آتا ہے۔",
+  "perfect": "اب تک جاری صورتِ حال یا بغیر کسی ختم شدہ ماضی کے وقت کے تجربے کے لیے present perfect یعنی have/has + past participle استعمال کریں۔ Since نقطۂ آغاز اور for مدت بتاتا ہے۔",
+  "conditional": "مستقبل کے حقیقی امکان کے لیے if کے ساتھ present simple اور مرکزی جملے میں will + بنیادی فعل استعمال کریں۔ should جیسے modal کے بعد to کے بغیر بنیادی فعل آتا ہے۔",
+  "relative": "Who شخص کے لیے، whose ملکیت ظاہر کرنے کے لیے اور where جگہ کے لیے ہے۔ enjoy کے بعد فعل کی -ing شکل استعمال کریں۔",
+  "passive": "مجہول میں be + past participle استعمال ہوتا ہے۔ وقت کے مطابق be کا زمانہ منتخب کریں۔ کسی گزشتہ عمل سے پہلے کے عمل کے لیے past perfect passive میں had been + past participle آتا ہے۔",
+  "unreal": "غیر حقیقی موجودہ صورتِ حال کے لیے if + past simple اور would + بنیادی فعل استعمال کریں۔ غیر حقیقی ماضی کے لیے if + past perfect اور would have + past participle استعمال کریں۔",
+  "deduction": "ماضی کے بارے میں مضبوط مثبت اندازے کے لیے must have + past participle اور ناممکن ہونے کے لیے cannot have استعمال کریں۔ ماضی کی reported speech میں will عموماً would اور am/is عموماً was بن جاتا ہے۔",
+  "inversion": "شروع میں never، rarely، not until یا only then جیسے منفی یا محدود کرنے والے فقرے کے بعد مرکزی جملے میں معاون فعل اور فاعل کی ترتیب الٹ دیں۔ past simple میں دوسرا معاون فعل نہ ہو تو did + بنیادی فعل استعمال کریں۔",
+  "focus": "What-cleft میں what سے شروع ہونے والا جملہ فاعل بنتا ہے اور عموماً اس کے بعد is یا was آتا ہے۔ It-cleft میں it is/was کسی جز کو نمایاں کرتا ہے، پھر that والا جملہ آتا ہے۔ حرفِ جار کے بعد اسم یا -ing شکل استعمال کریں۔",
+  "concession": "Although اور even though کے بعد فاعل اور فعل والا جملہ آتا ہے۔ Despite اور in spite of کے بعد اسم یا -ing فقرہ آتا ہے۔ رسمی شرط میں had + فاعل + past participle، if + past perfect کی جگہ آسکتا ہے۔",
+  "nuance": "درست معنی اور لفظی جوڑ کے مطابق انتخاب کریں: equivocal کا مطلب مبہم؛ tacit یعنی بغیر کہے سمجھا گیا؛ tenuous یعنی کمزور؛ cogent واضح اور قائل کرنے والی دلیل کے لیے ہے۔",
+  "collocation": "مقررہ لفظی جوڑ اہم ہیں: bear in mind یعنی یاد رکھنا؛ call into question یعنی شک پیدا کرنا؛ draw a distinction یعنی فرق واضح کرنا؛ tally with یعنی مطابقت رکھنا۔",
+  "rhetoric": "رسمی رعایت اور مقصد کے مخصوص سانچے ہیں: be that as it may اختلاف سے پہلے ایک بات مانتا ہے؛ with a view to کے بعد -ing آتا ہے؛ lest کے بعد should + بنیادی فعل آسکتا ہے؛ شروع میں so + صفت ترتیب الٹ سکتی ہے۔"
+}

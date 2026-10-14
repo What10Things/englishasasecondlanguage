@@ -10,7 +10,7 @@ from pathlib import Path
 from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, urlopen
 from flask import Blueprint, abort, current_app, g, redirect, render_template, request, send_file, session, url_for
-from .catalog import LANGUAGES, LEVELS, LEVEL_LABELS, UI
+from .catalog import LANGUAGES, LEVELS, LEVEL_LABELS, UI, direction, text_html
 from .bank import questions_for
 
 bp = Blueprint('learning', __name__, template_folder='templates', static_folder='assets', static_url_path='/assets/learning')
@@ -45,7 +45,7 @@ def page(view, title=None, **kwargs):
     lang = g.efl_language
     if 'csrf' not in session:
         session['csrf'] = secrets.token_urlsafe(32)
-    return render_template('learning.html', view=view, title=title or UI[lang]['home'], t=UI[lang], lang=lang, languages=LANGUAGES, levels=LEVELS, level_labels=LEVEL_LABELS, csrf=session['csrf'], checkout_ready=ready(), **kwargs)
+    return render_template('learning.html', view=view, title=title or UI[lang]['home'], t=UI[lang], lang=lang, direction=direction, languages=LANGUAGES, levels=LEVELS, level_labels=LEVEL_LABELS, csrf=session['csrf'], checkout_ready=ready(), **kwargs)
 
 
 def valid_post():
@@ -79,7 +79,7 @@ def home():
 @bp.get('/resources/')
 @bp.get('/shop/')
 def shop():
-    return page('shop', title=UI[g.efl_language]['shop'], products=catalog())
+    return page('shop', title=UI[g.efl_language]['shop'], products=[p for p in catalog() if not p.get('archived')])
 
 
 @bp.get('/resources/<product_id>/')
@@ -87,6 +87,10 @@ def product(product_id):
     p = get_product(product_id)
     if not p:
         abort(404)
+    if p.get('archived'):
+        latest = next((x for x in catalog() if x['level']==p['level'] and not x.get('archived')), None)
+        if latest:
+            return redirect(url_for('learning.product', product_id=latest['id']), 302)
     qs = questions_for(p['level'])
     return page('product', product=p, level=p['level'], questions=[qs[i] for i in (0,4,8)], title=f'{p["level"]} · {UI[g.efl_language]["pack"]}')
 
@@ -157,6 +161,8 @@ def checkout(product_id):
     p=get_product(product_id)
     if not p:
         abort(404)
+    if p.get('archived'):
+        abort(404)
     if not valid_post() or request.form.get('digital_consent')!='yes':
         abort(403)
     if not ready():
@@ -174,7 +180,7 @@ def checkout(product_id):
         'line_items[0][quantity]':'1',
         'success_url':ORIGIN+'/purchase/success/?session_id={CHECKOUT_SESSION_ID}&lang='+lang,
         'cancel_url':ORIGIN+'/resources/'+p['id']+'/?lang='+lang,
-        'locale':lang,
+        'locale':{'zh-Hans':'zh','zh-Hant':'zh-TW'}.get(lang, lang if lang in ('en','es','fr','pl') else 'auto'),
     }
     # Repeated clicks return the same checkout session for this browser/product.
     key='checkout_'+p['id']
@@ -243,6 +249,8 @@ def install(app):
     app.config.setdefault('EFL_SALES_ENABLED',os.environ.get('EFL_SALES_ENABLED')=='1')
     app.config.update(SESSION_COOKIE_SECURE=not app.testing,SESSION_COOKIE_HTTPONLY=True,SESSION_COOKIE_SAMESITE='Lax')
     app.register_blueprint(bp)
+    from markupsafe import Markup
+    app.jinja_env.filters['bidi_text'] = lambda value: Markup(text_html(value, g.get('efl_language', 'en')))
 
     @app.before_request
     def language_context():
@@ -272,9 +280,9 @@ def install(app):
         lang=g.get('efl_language','en');t=UI[lang]
         first=request.cookies.get('efl_language') not in LANGUAGES and request.args.get('lang') not in LANGUAGES
         next_path=safe_next(request.path)
-        options=''.join(f'<a lang="{code}" href="{escape(url_for("learning.set_language",code=code,next=next_path),quote=True)}"'+(' aria-current="true"' if code==lang else '')+f'>{escape(name)}</a>' for code,name in LANGUAGES.items())
-        controls=f'<a class="language-trigger" data-language-open href="/languages/?{urlencode({"next":next_path})}" aria-haspopup="dialog">{escape(t["language"])} · {escape(LANGUAGES[lang])}</a>'
-        dialog=f'<dialog id="language-dialog" class="language-modal" aria-labelledby="language-title" data-first-visit="{str(first).lower()}"><button type="button" class="language-close" data-language-close>{escape(t["close"])}</button><h2 id="language-title">{escape(t["choose"])}</h2><p>{escape(t["language_help"])}</p><div class="language-options">{options}</div></dialog>'
+        options=''.join(f'<a lang="{code}" dir="{direction(code)}" href="{escape(url_for("learning.set_language",code=code,next=next_path),quote=True)}"'+(' aria-current="true"' if code==lang else '')+f'>{escape(name)}</a>' for code,name in LANGUAGES.items())
+        controls=f'<a class="language-trigger" lang="{lang}" dir="{direction(lang)}" data-language-open href="/languages/?{urlencode({"next":next_path})}" aria-haspopup="dialog">{escape(t["language"])} · {escape(LANGUAGES[lang])}</a>'
+        dialog=f'<dialog id="language-dialog" class="language-modal" lang="{lang}" dir="{direction(lang)}" aria-labelledby="language-title" data-first-visit="{str(first).lower()}"><button type="button" class="language-close" data-language-close>{escape(t["close"])}</button><h2 id="language-title">{escape(t["choose"])}</h2><p>{escape(t["language_help"])}</p><div class="language-options">{options}</div></dialog>'
         if 'class="header-inner"' in html or 'class="shell header-inner"' in html:
             html=html.replace('</nav>',controls+'</nav>',1)
         else:

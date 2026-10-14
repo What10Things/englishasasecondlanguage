@@ -64,3 +64,27 @@ To add a language: add a name in LANGUAGES, every UI row, every rule explanation
 validate the complete coverage and create new immutable product versions. To add
 new exercises/topics, extend the authored bank and review educational ambiguity;
 never edit a published edition without incrementing its version.
+
+## Asian-language expansion — 14 October 2026
+
+Added Hindi (`hi`), Urdu (`ur`), Pashto (`ps`), Simplified Chinese (`zh-Hans`)
+and Traditional Chinese (`zh-Hant`). The Chinese options are written-script
+variants, not spoken Mandarin/Cantonese audio courses. Nine language choices
+now cover the translated study/shop/test UI and all 18 explanation rules across
+A1–C2. Questions and writing prompts remain English.
+
+Urdu and Pashto use RTL page/dialog layout; English questions, answers and inline
+grammar terms retain LTR direction. The scrollable picker works on small screens.
+Print editions preserve direction too. There are no external translation API calls.
+
+Version 2 products include all nine language editions (54 level/language editions,
+162 HTML documents). Version 1 remains reproducible byte-for-byte via frozen source,
+so previous purchase hashes/downloads continue to work; archived listings redirect
+to the current edition. Prices remain £3.99. Sales activation remains unchanged.
+Legacy-page English-only disclosures still apply; these additions do not claim
+that every older informational page has been translated.
+
+Validation: complete locale/rule keys, all 54 customer route combinations,
+English exercise direction, deterministic ZIP coverage, preserved v1 hashes,
+Chromium mobile/RTL/picker checks for each added locale, print checks, and live
+checks for all five new options in the deployment gate.
