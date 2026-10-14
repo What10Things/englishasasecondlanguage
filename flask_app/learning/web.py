@@ -248,6 +248,9 @@ def install(app):
     def language_context():
         lang=request.args.get('lang') or request.cookies.get('efl_language','en')
         g.efl_language=lang if lang in LANGUAGES else 'en'
+        if request.method == 'GET' and re.fullmatch(r'/(study|resources|shop|english-level-test|practice/(a1|a2|b1|b2|c1|c2)|resources/[a-z0-9-]+)', request.path):
+            suffix = '?' + urlencode(request.args) if request.args else ''
+            return redirect(request.path + '/' + suffix, 308)
         # Block filesystem URLs even on hosts that pass them through Passenger.
         if request.path.startswith(('/private_products/','/learning/edition-lock','/storage/')):
             abort(404)
@@ -297,4 +300,6 @@ def install(app):
         response.headers['Cache-Control']='private, no-store'
         response.vary.add('Cookie')
         response.headers['Content-Language']=lang if 'data-fully-localised' in html else 'en'
+        if request.args.get('lang') in LANGUAGES:
+            response.set_cookie('efl_language', lang, max_age=31536000, secure=not current_app.testing, httponly=True, samesite='Lax')
         return response

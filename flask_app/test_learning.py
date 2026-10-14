@@ -42,6 +42,11 @@ class LearningTests(unittest.TestCase):
         self.assertEqual(r.headers['Content-Language'],'pl')
         self.assertEqual(self.client.get('/language/unknown/').status_code,404)
         self.assertEqual(self.client.get('/language/en/?next=/%5Cevil.example').location,'/')
+    def test_language_link_persists_and_canonical_routes(self):
+        self.client.get('/resources/?lang=fr')
+        self.assertIn(UI['fr']['home'], self.client.get('/study/').text)
+        self.assertEqual(self.client.get('/english-level-test').status_code, 308)
+
     def test_all_level_language_customer_routes(self):
         for lang in LANGUAGES:
             for level in LEVELS:

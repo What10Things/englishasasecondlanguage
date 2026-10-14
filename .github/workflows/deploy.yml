@@ -231,8 +231,18 @@ jobs:
                   except (HTTPError, URLError, TimeoutError, OSError) as exc:
                       failures.append(f'{path}: {exc}')
 
+              for private_path in ('/private_products/a1-practice-v1.zip', '/learning/bank.py', '/storage/.secret_key', '/purchase/download/?session_id=forged'):
+                  try:
+                      with urlopen(Request('https://englishasaforeignlanguage.com' + private_path), timeout=20) as response:
+                          failures.append(f'Private resource exposed: {private_path}: {response.status}')
+                  except HTTPError as exc:
+                      if exc.code not in (403, 404):
+                          failures.append(f'Private resource unexpected status: {private_path}: {exc.code}')
+                  except (URLError, TimeoutError, OSError) as exc:
+                      failures.append(f'Private resource verification unavailable: {private_path}: {exc}')
+
               if not failures:
-                  print('Live Flask application verified')
+                  print('Live Flask application verified; private files and unpaid downloads denied')
                   break
               last_error = '; '.join(failures)
               if attempt == 25:
