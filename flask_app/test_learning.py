@@ -49,6 +49,18 @@ class LearningTests(unittest.TestCase):
         self.assertEqual(r.headers['Content-Language'],'pl')
         self.assertEqual(self.client.get('/language/unknown/').status_code,404)
         self.assertEqual(self.client.get('/language/en/?next=/%5Cevil.example').location,'/')
+    def test_first_visit_remembered_without_explicit_selection(self):
+        first = self.client.get('/')
+        self.assertIn('data-first-visit="true"', first.text)
+        cookie = first.headers.get('Set-Cookie', '')
+        self.assertIn('efl_language=en;', cookie)
+        self.assertIn('Max-Age=31536000', cookie)
+        self.assertIn('Path=/', cookie)
+        for path in ('/about/', '/resources/', '/practice/a1/', '/'):
+            response = self.client.get(path)
+            self.assertIn('data-first-visit="false"', response.text)
+            self.assertIn('data-language-open', response.text)
+
     def test_language_link_persists_and_canonical_routes(self):
         self.client.get('/resources/?lang=fr')
         self.assertIn(UI['fr']['home'], self.client.get('/study/').text)

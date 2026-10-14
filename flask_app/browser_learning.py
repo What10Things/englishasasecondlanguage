@@ -14,6 +14,18 @@ try:
         page=browser.new_page(viewport={'width':390,'height':844})
         page.goto('http://127.0.0.1:5071/')
         assert page.locator('#language-dialog').is_visible()
+        page.locator('[data-language-close]').click()
+        page.goto('http://127.0.0.1:5071/resources/')
+        assert not page.locator('#language-dialog').is_visible()
+        page.goto('http://127.0.0.1:5071/')
+        assert not page.locator('#language-dialog').is_visible()
+        page.locator('[data-language-open]').click()
+        page.keyboard.press('Escape')
+        page.reload()
+        assert not page.locator('#language-dialog').is_visible()
+        cookie = next(c for c in page.context.cookies() if c['name']=='efl_language')
+        assert cookie['path']=='/' and cookie['expires']>0
+        page.locator('[data-language-open]').click()
         page.locator('#language-dialog a[lang=pl]').click()
         assert page.locator('html').get_attribute('lang')=='pl'
         assert not page.locator('#language-dialog').is_visible()

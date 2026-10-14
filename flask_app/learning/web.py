@@ -316,6 +316,7 @@ def install(app):
         response.headers['Cache-Control']='private, no-store'
         response.vary.add('Cookie')
         response.headers['Content-Language']=lang if 'data-fully-localised' in html else 'en'
-        if request.args.get('lang') in LANGUAGES:
+        # Remember the first visit even when the visitor dismisses the picker.
+        if first or request.args.get('lang') in LANGUAGES:
             response.set_cookie('efl_language', lang, max_age=31536000, secure=not current_app.testing, httponly=True, samesite='Lax')
         return response
