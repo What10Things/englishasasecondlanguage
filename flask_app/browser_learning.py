@@ -47,6 +47,15 @@ try:
             page.screenshot(path=f'browser-evidence/{lang}-picker.png',full_page=True)
             page.keyboard.press('Escape')
             page.screenshot(path=f'browser-evidence/{lang}-practice.png',full_page=True)
+        # Visual identity across legacy and localised templates.
+        for width in (320,390,1440):
+            page.set_viewport_size({'width':width,'height':900})
+            for route,name in (('/?lang=en','home'),('/study/?lang=hi','study'),('/resources/?lang=en','books')):
+                page.goto('http://127.0.0.1:5071'+route)
+                assert page.locator('.brand .identity-mark').first.is_visible()
+                assert page.locator('[data-language-open]').is_visible()
+                assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), (width,route)
+                page.screenshot(path=f'browser-evidence/design-{name}-{width}.png',full_page=True)
         # Print layout: inspect each local language edition at A4 viewport size.
         from learning.generate import document
         page.set_viewport_size({'width':794,'height':1123})

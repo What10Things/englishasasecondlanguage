@@ -277,14 +277,19 @@ def install(app):
         html=response.get_data(as_text=True)
         if '</body>' not in html:
             return response
+        # One vector identity across legacy snapshots and dynamic learning pages.
+        brand = '<img class="identity-mark" src="/assets/learning/logo.svg?v=3" alt="" width="42" height="42"><span class="identity-type"><span class="identity-word">efl.</span><span class="identity-caption">by level</span></span>'
+        html = re.sub(r'(<a\b[^>]*class="brand(?: brand-footer)?"[^>]*>).*?</a>', lambda m: m.group(1) + brand + '</a>', html, flags=re.DOTALL)
+        html = re.sub(r'<link[^>]+rel="(?:shortcut )?icon"[^>]*>', '', html)
+        html = html.replace('</head>', '<link rel="icon" type="image/svg+xml" href="/assets/learning/logo.svg?v=3"><link rel="stylesheet" href="/assets/learning/identity.css?v=3"></head>')
         lang=g.get('efl_language','en');t=UI[lang]
         first=request.cookies.get('efl_language') not in LANGUAGES and request.args.get('lang') not in LANGUAGES
         next_path=safe_next(request.path)
         options=''.join(f'<a lang="{code}" dir="{direction(code)}" href="{escape(url_for("learning.set_language",code=code,next=next_path),quote=True)}"'+(' aria-current="true"' if code==lang else '')+f'>{escape(name)}</a>' for code,name in LANGUAGES.items())
         controls=f'<a class="language-trigger" lang="{lang}" dir="{direction(lang)}" data-language-open href="/languages/?{urlencode({"next":next_path})}" aria-haspopup="dialog">{escape(t["language"])} · {escape(LANGUAGES[lang])}</a>'
-        dialog=f'<dialog id="language-dialog" class="language-modal" lang="{lang}" dir="{direction(lang)}" aria-labelledby="language-title" data-first-visit="{str(first).lower()}"><button type="button" class="language-close" data-language-close>{escape(t["close"])}</button><h2 id="language-title">{escape(t["choose"])}</h2><p>{escape(t["language_help"])}</p><div class="language-options">{options}</div></dialog>'
+        dialog=f'<dialog id="language-dialog" class="language-modal" lang="{lang}" dir="{direction(lang)}" aria-labelledby="language-title" data-first-visit="{str(first).lower()}"><button type="button" class="language-close" data-language-close>{escape(t["close"])}</button><div class="picker-brand" aria-hidden="true"><img src="/assets/learning/logo.svg?v=3" alt="" width="28" height="28"><span>efl.</span></div><h2 id="language-title">{escape(t["choose"])}</h2><p>{escape(t["language_help"])}</p><div class="language-options">{options}</div></dialog>'
         if 'class="header-inner"' in html or 'class="shell header-inner"' in html:
-            html=html.replace('</nav>',controls+'</nav>',1)
+            html=html.replace('</nav>', '</nav>'+controls if 'class="site-nav"' in html else controls+'</nav>', 1)
         else:
             html=html.replace('<body>','<body>'+controls,1)
         if '/assets/learning/learning.css' not in html:
@@ -302,8 +307,11 @@ def install(app):
             level_match=re.fullmatch(r'/learn-english/(a1|a2|b1|b2|c1|c2)/?',request.path)
             if level_match:
                 notice+=f' · <a href="/practice/{level_match.group(1)}/">{escape(t["practice"])}</a>'
-            html=html.replace('<main id="main">','<main id="main"><aside class="shell localisation-notice">'+notice+'</aside>',1)
+            if request.path != '/' or lang != 'en':
+                html=html.replace('<main id="main">','<main id="main"><aside class="shell localisation-notice">'+notice+'</aside>',1)
         html=html.replace('</body>',dialog+'<script defer src="/assets/learning/language.js?v=1"></script></body>')
+        html=html.replace('<link rel="stylesheet" href="/assets/learning/identity.css?v=3">','')
+        html=html.replace('</head>','<link rel="stylesheet" href="/assets/learning/identity.css?v=3"></head>')
         response.set_data(html)
         response.headers['Cache-Control']='private, no-store'
         response.vary.add('Cookie')
