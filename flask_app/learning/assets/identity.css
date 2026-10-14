@@ -42,3 +42,8 @@ html[dir=rtl] .level-index a{padding-inline:0 20px}html[dir=rtl] .index-arrow{tr
 
 @media(max-width:980px){.site-nav{display:none;align-items:stretch;gap:0}.site-nav.is-open{display:flex}.header-inner:has(.site-nav){gap:12px}.header-inner>.language-trigger{order:2}.header-inner>.header-cta{order:3}.header-inner>.menu-button{order:4}}
 @media(max-width:540px){.header-inner:has(.site-nav)>.brand{width:calc(100% - 60px);order:0}.header-inner:has(.site-nav)>.menu-button{order:1}.header-inner>.language-trigger{margin-inline-end:auto}.header-inner>.header-cta{margin:0}}
+
+.learning-nav>a.language-trigger{border:1px solid #a7aaa1;padding:10px 12px}
+.privacy-settings{padding-block:16px;font-size:13px}
+.privacy-banner{position:fixed;z-index:500;bottom:16px;inset-inline:16px;max-width:960px;margin-inline:auto;background:var(--surface);border:1px solid var(--ink);padding:22px;box-shadow:0 8px 32px #20232126;max-height:75dvh;overflow:auto;font-size:14px}
+.privacy-banner[hidden]{display:none}.privacy-banner p{margin:8px 0 16px;max-width:90ch}.privacy-actions{display:flex;gap:12px;flex-wrap:wrap}.privacy-actions .button{font-size:14px}

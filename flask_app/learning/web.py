@@ -12,6 +12,8 @@ from urllib.request import Request, urlopen
 from flask import Blueprint, abort, current_app, g, redirect, render_template, request, send_file, session, url_for
 from .catalog import LANGUAGES, LEVELS, LEVEL_LABELS, UI, direction, text_html
 from .bank import questions_for
+from .localisation import LanguagePaths, local_url, local_links, unprefix
+from .privacy import controls as privacy_controls
 
 bp = Blueprint('learning', __name__, template_folder='templates', static_folder='assets', static_url_path='/assets/learning')
 ORIGIN = 'https://englishasaforeignlanguage.com'
@@ -65,7 +67,7 @@ def languages():
 def set_language(code):
     if code not in LANGUAGES:
         abort(404)
-    response = redirect(safe_next(request.args.get('next')), code=303)
+    response = redirect(local_url(unprefix(safe_next(request.args.get('next'))), code), code=303)
     response.set_cookie('efl_language', code, max_age=31536000, secure=not current_app.testing, httponly=True, samesite='Lax')
     response.headers['Cache-Control'] = 'no-store'
     return response
@@ -249,12 +251,13 @@ def install(app):
     app.config.setdefault('EFL_SALES_ENABLED',os.environ.get('EFL_SALES_ENABLED')=='1')
     app.config.update(SESSION_COOKIE_SECURE=not app.testing,SESSION_COOKIE_HTTPONLY=True,SESSION_COOKIE_SAMESITE='Lax')
     app.register_blueprint(bp)
+    app.wsgi_app = LanguagePaths(app.wsgi_app)
     from markupsafe import Markup
     app.jinja_env.filters['bidi_text'] = lambda value: Markup(text_html(value, g.get('efl_language', 'en')))
 
     @app.before_request
     def language_context():
-        lang=request.args.get('lang') or request.cookies.get('efl_language','en')
+        lang=request.environ.get('efl.url_language') or request.args.get('lang') or request.cookies.get('efl_language','en')
         g.efl_language=lang if lang in LANGUAGES else 'en'
         if request.method == 'GET' and re.fullmatch(r'/(study|resources|shop|english-level-test|practice/(a1|a2|b1|b2|c1|c2)|resources/[a-z0-9-]+)', request.path):
             suffix = '?' + urlencode(request.args) if request.args else ''
@@ -272,6 +275,9 @@ def install(app):
 
     @app.after_request
     def language_controls(response):
+        lang = g.get('efl_language', 'en')
+        if response.location and response.location.startswith('/'):
+            response.location = local_url(response.location, lang)
         if response.mimetype!='text/html' or response.direct_passthrough:
             return response
         html=response.get_data(as_text=True)
@@ -283,9 +289,9 @@ def install(app):
         html = re.sub(r'<link[^>]+rel="(?:shortcut )?icon"[^>]*>', '', html)
         html = html.replace('</head>', '<link rel="icon" type="image/svg+xml" href="/assets/learning/logo.svg?v=3"><link rel="stylesheet" href="/assets/learning/identity.css?v=3"></head>')
         lang=g.get('efl_language','en');t=UI[lang]
-        first=request.cookies.get('efl_language') not in LANGUAGES and request.args.get('lang') not in LANGUAGES
+        first=request.cookies.get('efl_language') not in LANGUAGES and request.args.get('lang') not in LANGUAGES and not request.environ.get('efl.url_language')
         next_path=safe_next(request.path)
-        options=''.join(f'<a lang="{code}" dir="{direction(code)}" href="{escape(url_for("learning.set_language",code=code,next=next_path),quote=True)}"'+(' aria-current="true"' if code==lang else '')+f'>{escape(name)}</a>' for code,name in LANGUAGES.items())
+        options=''.join(f'<a lang="{code}" dir="{direction(code)}" href="{escape("/language/"+code+"/?"+urlencode({"next":next_path}),quote=True)}"'+(' aria-current="true"' if code==lang else '')+f'>{escape(name)}</a>' for code,name in LANGUAGES.items())
         controls=f'<a class="language-trigger" lang="{lang}" dir="{direction(lang)}" data-language-open href="/languages/?{urlencode({"next":next_path})}" aria-haspopup="dialog">{escape(t["language"])} · {escape(LANGUAGES[lang])}</a>'
         dialog=f'<dialog id="language-dialog" class="language-modal" lang="{lang}" dir="{direction(lang)}" aria-labelledby="language-title" data-first-visit="{str(first).lower()}"><button type="button" class="language-close" data-language-close>{escape(t["close"])}</button><div class="picker-brand" aria-hidden="true"><img src="/assets/learning/logo.svg?v=3" alt="" width="28" height="28"><span>efl.</span></div><h2 id="language-title">{escape(t["choose"])}</h2><p>{escape(t["language_help"])}</p><div class="language-options">{options}</div></dialog>'
         if 'class="header-inner"' in html or 'class="shell header-inner"' in html:
@@ -309,14 +315,19 @@ def install(app):
                 notice+=f' · <a href="/practice/{level_match.group(1)}/">{escape(t["practice"])}</a>'
             if request.path != '/' or lang != 'en':
                 html=html.replace('<main id="main">','<main id="main"><aside class="shell localisation-notice">'+notice+'</aside>',1)
-        html=html.replace('</body>',dialog+'<script defer src="/assets/learning/language.js?v=1"></script></body>')
+        html=html.replace('</body>',dialog+'<script defer src="/assets/learning/language.js?v=2"></script></body>')
         html=html.replace('<link rel="stylesheet" href="/assets/learning/identity.css?v=3">','')
         html=html.replace('</head>','<link rel="stylesheet" href="/assets/learning/identity.css?v=3"></head>')
+        # Replace legacy localStorage controls with one cookie-backed control on every page.
+        html = re.sub(r'<div class="cookie-banner" data-cookie-banner hidden>.*?</div></div>', '', html, flags=re.DOTALL)
+        html = re.sub(r'<button[^>]*data-cookie-settings[^>]*>.*?</button>', '', html, flags=re.DOTALL)
+        html = html.replace('</body>', privacy_controls(lang, direction(lang)) + '</body>')
+        html = local_links(html, lang)
         response.set_data(html)
         response.headers['Cache-Control']='private, no-store'
         response.vary.add('Cookie')
         response.headers['Content-Language']=lang if 'data-fully-localised' in html else 'en'
         # Remember the first visit even when the visitor dismisses the picker.
-        if first or request.args.get('lang') in LANGUAGES:
+        if first or request.args.get('lang') in LANGUAGES or request.environ.get('efl.url_language'):
             response.set_cookie('efl_language', lang, max_age=31536000, secure=not current_app.testing, httponly=True, samesite='Lax')
         return response

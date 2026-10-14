@@ -34,7 +34,7 @@ def main() -> None:
         structured_data = json.loads(ld_match.group(1))
         graph_types = {node["@type"] for node in structured_data["@graph"]}
         assert {"WebSite", "Organization"} <= graph_types
-        assert '<link rel="canonical" href="https://englishasaforeignlanguage.com/">' in homepage_html
+        assert '<link rel="canonical" href="https://englishasaforeignlanguage.com/en/">' in homepage_html
 
         require_text(client, "/english-level-test/", "24 short questions", "Find your starting point")
         require_text(client, "/learn-english/a1/", "Core grammar")
@@ -118,7 +118,8 @@ def main() -> None:
 
         homepage = homepage_response.get_data(as_text=True)
         assert "Accept analytics" not in homepage
-        assert "Cookie settings" not in homepage
+        assert "data-privacy-open" in homepage
+        assert "data-privacy-banner" in homepage
 
         # Same-origin POST (Origin header matching Host) must succeed.
         same_origin = client.post(
@@ -163,7 +164,7 @@ def main() -> None:
         require_text(
             client,
             "/english-level-test/",
-            'action="/english-level-test/" method="post"',
+            'action="/en/english-level-test/" method="post"',
             'name="csrf"',
             'does not assess listening, speaking or writing',
 
@@ -176,7 +177,7 @@ def main() -> None:
         assert len(locs) >= 40, f"expected the full crawled route set in sitemap.xml, got {len(locs)}"
         assert all(loc.startswith("https://englishasaforeignlanguage.com/") for loc in locs)
         assert not any(loc.endswith("/404/") for loc in locs), "404 page must not be indexed"
-        assert f"https://englishasaforeignlanguage.com/learn-english/grammar/" in locs
+        assert f"https://englishasaforeignlanguage.com/en/learn-english/grammar/" in locs
 
         # Daily retention maintenance runs opportunistically on GET traffic
         # without a GoDaddy cron job, independent of new submissions.

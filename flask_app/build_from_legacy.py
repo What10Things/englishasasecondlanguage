@@ -197,12 +197,12 @@ def apply_compliance_updates(route: str, html: str) -> str:
 
     if route in {"/privacy/", "/privacy-policy/"}:
         privacy = f'''<section class="legal-page"><div class="shell legal-content">
-        <h1>Privacy Policy</h1><p class="meta">Last updated 24 September 2026</p>
+        <h1>Privacy Policy</h1><p class="meta">Last updated 14 October 2026</p>
         <h2>Controller and contact</h2><p>Urban Sky Web Ltd is the controller of personal information handled through EnglishAsAForeignLanguage.com. {COMPANY_SENTENCE} Use the <a href="/contact/">contact page</a> for privacy questions and rights requests.</p>
-        <h2>Information we collect</h2><p>When you request a resource, save a level-test result or contact us, we may collect your name, email address, selected resource, estimated CEFR level, message, privacy acknowledgement, optional marketing choice, submission time and originating page. Our hosting provider may also process routine IP-address, browser, page, time, error and security logs. The level-test answers and score are calculated in your browser; only the result level is submitted if you choose to save it.</p>
+        <h2>Information we collect</h2><p>When you request a resource, save a level-test result or contact us, we may collect your name, email address, selected resource, estimated CEFR level, message, privacy acknowledgement, optional marketing choice, submission time and originating page. Our hosting provider may also process routine IP-address, browser, page, time, error and security logs. Level-test answers are submitted to the server to calculate and show your result; they are not saved to a learner profile.</p>
         <h2>Purposes and lawful bases</h2><p>We use submitted details to provide a requested resource or saved result, respond to a message and administer the relationship. We rely on steps taken at your request in connection with a service and on legitimate interests in responding, correcting content, securing the website and keeping proportionate records. Optional marketing relies on consent. We may also process information to meet a legal obligation or establish, exercise or defend legal claims.</p>
         <h2>Marketing choice</h2><p>Marketing is optional and is not a condition of receiving a resource, saving a result or receiving a reply. You can withdraw marketing consent at any time using the unsubscribe method in a message or the contact page, without affecting earlier lawful processing.</p>
-        <h2>Cookies, storage and fonts</h2><p>The current site does not use analytics or advertising cookies. Test and form state is held temporarily in the page while you use it. Fonts are served from this website, so pages do not request font files from Google or any other third party.</p>
+        <h2>Cookies, storage and fonts</h2><p>The current site does not use analytics or advertising cookies. Essential first-party cookies remember your language (efl_language) and privacy choice (efl_cookie_consent) for one year. A session cookie protects forms and checkout. You can change your privacy choice through Cookie settings at the bottom of any page. Optional cookies remain off unless allowed; no optional analytics or advertising tools are currently installed. Fonts are served from this website, so pages do not request font files from Google or any other third party.</p>
         <h2>Recipients and international transfers</h2><p>Information may be processed by providers supporting hosting, security and email, and by professional advisers or public authorities where necessary. Some providers may process information outside the United Kingdom. Where required, Urban Sky Web Ltd relies on an applicable adequacy regulation or approved contractual safeguards and supplementary measures. You may ask for information about the safeguard used.</p>
         <h2>Retention</h2><p>Website submissions are automatically removed after 24 months. Correspondence is normally deleted within 24 months after it is closed unless a longer period is needed for an ongoing relationship, legal claim or legal obligation. Hosting and security logs follow the provider's operational schedule. Retention is reviewed and information is deleted or anonymised when no longer needed.</p>
         <h2>Your rights</h2><p>Depending on the circumstances, you may request access, correction, deletion, restriction or portability. You may object to processing based on legitimate interests. You may withdraw consent at any time. We may need reasonable information to locate and verify a request and normally respond within one month.</p>
@@ -231,7 +231,11 @@ def generate_sitemap(manifest: dict[str, str]) -> str:
         - SITEMAP_EXCLUDED_ROUTES
     )
     entries = "".join(
-        f"<url><loc>{CANONICAL_ORIGIN}{route}</loc></url>" for route in routes
+        f"<url><loc>{CANONICAL_ORIGIN}/{code}{route}</loc></url>"
+        for route in routes
+        for code in (('en', 'es', 'fr', 'pl', 'hi', 'ur', 'ps', 'zh-Hans', 'zh-Hant')
+                     if route in ('/', '/study/', '/resources/', '/english-level-test/')
+                     or route.startswith(('/practice/', '/resources/')) else ('en',))
     )
     return f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{entries}</urlset>\n'
 

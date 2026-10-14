@@ -15,6 +15,8 @@ try:
         page.goto('http://127.0.0.1:5071/')
         assert page.locator('#language-dialog').is_visible()
         page.locator('[data-language-close]').click()
+        page.locator('[data-privacy-choice=essential]').click()
+        assert not page.locator('[data-privacy-banner]').is_visible()
         page.goto('http://127.0.0.1:5071/resources/')
         assert not page.locator('#language-dialog').is_visible()
         page.goto('http://127.0.0.1:5071/')
@@ -68,6 +70,24 @@ try:
                 assert page.locator('[data-language-open]').is_visible()
                 assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), (width,route)
                 page.screenshot(path=f'browser-evidence/design-{name}-{width}.png',full_page=True)
+        # URL language is authoritative; links and preference follow it.
+        page.goto('http://127.0.0.1:5071/fr/resources/')
+        assert page.locator('html').get_attribute('lang') == 'fr'
+        assert not page.locator('#language-dialog').is_visible()
+        page.locator('.workbook-cover').first.click()
+        assert '/fr/resources/a1-practice-v2/' in page.url
+        page.locator('[data-language-open]').click()
+        page.locator('#language-dialog a[lang=pl]').click()
+        assert '/pl/resources/a1-practice-v2/' in page.url
+        page.locator('[data-privacy-open]').click()
+        assert page.locator('[data-privacy-banner]').is_visible()
+        page.locator('[data-privacy-choice=optional]').click()
+        page.reload()
+        assert not page.locator('[data-privacy-banner]').is_visible()
+        assert next(c for c in page.context.cookies() if c['name']=='efl_cookie_consent')['value']=='optional'
+        page.locator('[data-privacy-open]').click()
+        page.locator('[data-privacy-choice=essential]').click()
+        assert next(c for c in page.context.cookies() if c['name']=='efl_cookie_consent')['value']=='essential'
         # Print layout: inspect each local language edition at A4 viewport size.
         from learning.generate import document
         page.set_viewport_size({'width':794,'height':1123})

@@ -189,6 +189,10 @@ jobs:
           from urllib.request import Request, urlopen
 
           page_checks = {
+              '/en/': ('data-privacy-banner', 'href="/en/'),
+              '/fr/resources/': ('Boutique', 'href="/fr/resources/a1-practice-v2/'),
+              '/pl/practice/a1/': ('Prawidłowa odpowiedź', 'data-first-visit="false"'),
+              '/ur/practice/a1/': ('dir="rtl"', 'data-privacy-open'),
               '/': ('English that meets you', 'Take the free level test', 'Get the free starter pack'),
               '/english-level-test/': ('24 short questions', 'Find your starting point'),
               '/learn-english/a1/': ('Core grammar',),

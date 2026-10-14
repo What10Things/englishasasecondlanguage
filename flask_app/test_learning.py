@@ -40,7 +40,7 @@ class LearningTests(unittest.TestCase):
     def test_language_choice_persistence_and_no_open_redirect(self):
         self.assertIn('data-first-visit="true"',self.client.get('/').text)
         r=self.client.get('/language/pl/?next=//evil.example')
-        self.assertEqual(r.location,'/')
+        self.assertEqual(r.location,'/pl/')
         r=self.client.get('/')
         self.assertIn(UI['pl']['home'],r.text)
         self.assertIn('data-first-visit="false"',r.text)
@@ -48,7 +48,7 @@ class LearningTests(unittest.TestCase):
         self.assertIn('Cookie',r.headers['Vary'])
         self.assertEqual(r.headers['Content-Language'],'pl')
         self.assertEqual(self.client.get('/language/unknown/').status_code,404)
-        self.assertEqual(self.client.get('/language/en/?next=/%5Cevil.example').location,'/')
+        self.assertEqual(self.client.get('/language/en/?next=/%5Cevil.example').location,'/en/')
     def test_first_visit_remembered_without_explicit_selection(self):
         first = self.client.get('/')
         self.assertIn('data-first-visit="true"', first.text)
@@ -65,6 +65,42 @@ class LearningTests(unittest.TestCase):
         self.client.get('/resources/?lang=fr')
         self.assertIn(UI['fr']['home'], self.client.get('/study/').text)
         self.assertEqual(self.client.get('/english-level-test').status_code, 308)
+
+    def test_language_url_navigation_and_privacy(self):
+        from html import unescape
+        for lang in LANGUAGES:
+            self.client.set_cookie('efl_language', 'en')
+            r = self.client.get('/'+lang+'/resources/')
+            self.assertEqual(r.status_code, 200)
+            self.assertIn(f'<html lang="{lang}"', r.text)
+            self.assertIn('data-first-visit="false"', r.text)
+            self.assertIn(f'href="/{lang}/study/"', r.text)
+            self.assertIn(f'href="/{lang}/resources/a1-practice-v2/"', r.text)
+            self.assertIn(f'https://englishasaforeignlanguage.com/{lang}/resources/', r.text)
+            self.assertIn('data-privacy-banner', r.text)
+            self.assertIn('data-privacy-open', r.text)
+            self.assertNotIn('data-cookie-banner', r.text)
+            self.assertEqual(r.text.count('data-privacy-banner'), 1)
+        r = self.client.get('/language/fr/?next=/pl/practice/a1/')
+        self.assertEqual(r.location, '/fr/practice/a1/')
+        r = self.client.get(r.location)
+        self.assertIn('<html lang="fr"', r.text)
+        r = self.client.get('/pl/english-level-test/')
+        self.assertIn('action="/pl/english-level-test/"', r.text)
+        self.assertEqual(self.client.get('/pl/english-level-test').location, '/pl/english-level-test/')
+        self.assertEqual(self.client.get('/pl/private_products/a1-practice-v2.zip').status_code, 404)
+        self.assertEqual(self.client.get('/pl/assets/learning/logo.svg').status_code, 200)
+
+    def test_prefixed_level_test_submission(self):
+        self.client.get('/fr/english-level-test/')
+        with self.client.session_transaction() as session:
+            csrf = session['csrf']
+        data = {q['id']: str(q['answer']) for q in test_questions()}
+        data['csrf'] = csrf
+        r = self.client.post('/fr/english-level-test/', data=data)
+        self.assertEqual(r.status_code, 200)
+        self.assertIn('<html lang="fr"', r.text)
+        self.assertIn('24/24', r.text)
 
     def test_all_level_language_customer_routes(self):
         for lang in LANGUAGES:
