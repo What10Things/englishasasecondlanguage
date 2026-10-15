@@ -236,7 +236,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     @app.get("/health")
     def health():
         status = "ok" if manifest else "degraded"
-        return jsonify(status=status, runtime="flask", pages=len(manifest), application="EFL by Level", hosting_node=socket.getfqdn())
+        return jsonify(status=status, runtime="flask", pages=len(manifest), application="EFL by Level", hosting_node=socket.getfqdn(), payments_configured=bool(app.config.get('STRIPE_SECRET_KEY')), sales_enabled=bool(app.config.get('EFL_SALES_ENABLED')))
 
     @app.route("/", methods=["GET", "HEAD", "POST"])
     @app.route("/<path:requested_path>", methods=["GET", "HEAD", "POST"])
