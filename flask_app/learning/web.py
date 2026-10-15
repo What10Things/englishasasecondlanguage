@@ -14,6 +14,7 @@ from .catalog import LANGUAGES, LEVELS, LEVEL_LABELS, UI, direction, text_html
 from .bank import questions_for
 from .localisation import LanguagePaths, local_url, local_links, unprefix
 from .privacy import controls as privacy_controls
+from . import factory
 
 bp = Blueprint('learning', __name__, template_folder='templates', static_folder='assets', static_url_path='/assets/learning')
 ORIGIN = 'https://englishasaforeignlanguage.com'
@@ -29,9 +30,10 @@ def safe_next(value):
 
 def catalog():
     try:
-        return json.loads((Path(current_app.config['PRODUCTS_DIR'])/'catalog.json').read_text())
+        base=json.loads((Path(current_app.config['PRODUCTS_DIR'])/'catalog.json').read_text())
     except (OSError, ValueError):
-        return []
+        base=[]
+    return base+factory.products()
 
 
 def get_product(product_id):
@@ -93,8 +95,21 @@ def product(product_id):
         latest = next((x for x in catalog() if x['level']==p['level'] and not x.get('archived')), None)
         if latest:
             return redirect(url_for('learning.product', product_id=latest['id']), 302)
+    if p.get('source')=='factory':
+        return page('factory',product=p,title=p['titles'].get(g.efl_language,p['title']))
     qs = questions_for(p['level'])
     return page('product', product=p, level=p['level'], questions=[qs[i] for i in (0,4,8)], title=f'{p["level"]} · {UI[g.efl_language]["pack"]}')
+
+
+@bp.get('/resources/<product_id>/release.json')
+def release_receipt(product_id):
+    p=get_product(product_id)
+    if not p or p.get('source')!='factory':abort(404)
+    try:factory.product_file(p)
+    except (OSError,ValueError):abort(503)
+    response=current_app.json.response({k:p[k] for k in ('id','sha256','price_pence','currency','quality_policy','languages')}|{'checkout_ready':ready()})
+    response.headers['Cache-Control']='no-store'
+    return response
 
 
 @bp.get('/practice/<level>/')
@@ -169,6 +184,9 @@ def checkout(product_id):
         abort(403)
     if not ready():
         return page('error', title=UI[g.efl_language]['shop'], error=UI[g.efl_language]['unavailable']),503
+    if p.get('source')=='factory':
+        try:factory.product_file(p)
+        except (OSError,ValueError):abort(503)
     lang=g.efl_language
     data={
         'mode':'payment','payment_method_types[0]':'card',
@@ -177,8 +195,8 @@ def checkout(product_id):
         'metadata[digital_consent]':'immediate-access-v1', 'metadata[language]':lang,
         'line_items[0][price_data][currency]':'gbp',
         'line_items[0][price_data][unit_amount]':str(p['price_pence']),
-        'line_items[0][price_data][product_data][name]':f'EFL by Level {p["level"]} Practice Pack — Edition {p["version"]}',
-        'line_items[0][price_data][product_data][description]':UI[lang]['formats'][:500],
+        'line_items[0][price_data][product_data][name]':(p['title']+' — '+p['level']) if p.get('source')=='factory' else f'EFL by Level {p["level"]} Practice Pack — Edition {p["version"]}',
+        'line_items[0][price_data][product_data][description]':('Printable HTML learner worksheets and teacher guide; ZIP download. Scaffolding languages: '+', '.join(p['languages'])) if p.get('source')=='factory' else UI[lang]['formats'][:500],
         'line_items[0][quantity]':'1',
         'success_url':ORIGIN+'/purchase/success/?session_id={CHECKOUT_SESSION_ID}&lang='+lang,
         'cancel_url':ORIGIN+'/resources/'+p['id']+'/?lang='+lang,
@@ -233,7 +251,11 @@ def purchase():
     if not p:
         return page('error', error=UI[g.efl_language]['payment_error']),403
     if request.path.endswith('/download/'):
-        file=Path(current_app.config['PRODUCTS_DIR'])/p['filename']
+        if p.get('source')=='factory':
+            try:file=factory.product_file(p)
+            except (OSError,ValueError):abort(503)
+        else:
+            file=Path(current_app.config['PRODUCTS_DIR'])/p['filename']
         if not file.is_file() or hashlib.sha256(file.read_bytes()).hexdigest()!=p['sha256']:
             abort(503)
         response=send_file(file, as_attachment=True, download_name=p['filename'], mimetype='application/zip')
@@ -247,6 +269,7 @@ def purchase():
 
 def install(app):
     app.config.setdefault('PRODUCTS_DIR',str(Path(app.root_path)/'private_products'))
+    app.config.setdefault('FACTORY_PRODUCTS_DIR',str(Path(app.root_path)/'storage'/'factory_products'))
     app.config.setdefault('STRIPE_SECRET_KEY',os.environ.get('EFL_STRIPE_SECRET_KEY',''))
     app.config.setdefault('EFL_SALES_ENABLED',os.environ.get('EFL_SALES_ENABLED')=='1')
     app.config.update(SESSION_COOKIE_SECURE=not app.testing,SESSION_COOKIE_HTTPONLY=True,SESSION_COOKIE_SAMESITE='Lax')

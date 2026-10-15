@@ -1,0 +1,44 @@
+name: Provision private EFL factory delivery
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/provision-factory-transport.yml'
+      - '.github/efl-factory-transport.pub'
+permissions:
+  contents: read
+concurrency:
+  group: efl-factory-transport
+  cancel-in-progress: false
+jobs:
+  seal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Seal existing site delivery credentials for Mainbuyer2
+        env:
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
+          EFL_STRIPE_SECRET_KEY: ${{ secrets.EFL_STRIPE_SECRET_KEY }}
+        run: |
+          umask 077
+          python - <<'PY'
+          import base64,json,os,pathlib,subprocess
+          result={}
+          for key in ('FTP_USERNAME','FTP_PASSWORD','FTP_SERVER_DIR'):
+              value=os.environ.get(key,'').encode()
+              if not value or len(value)>400:raise SystemExit('Required delivery configuration missing or too long: '+key)
+              process=subprocess.run(['openssl','pkeyutl','-encrypt','-pubin','-inkey','.github/efl-factory-transport.pub','-pkeyopt','rsa_padding_mode:oaep','-pkeyopt','rsa_oaep_md:sha256'],input=value,capture_output=True,check=True)
+              result[key]=base64.b64encode(process.stdout).decode()
+          pathlib.Path('sealed-transport.json').write_text(json.dumps(result))
+          print('DELIVERY_CREDENTIALS_SEALED')
+          print('EFL_STRIPE_REPOSITORY_SECRET_PRESENT',bool(os.environ.get('EFL_STRIPE_SECRET_KEY')))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: efl-sealed-transport
+          path: sealed-transport.json
+          retention-days: 1
