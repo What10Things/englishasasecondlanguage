@@ -4,6 +4,7 @@ import csv
 import json
 import logging
 import os
+import socket
 import time
 from collections import deque
 from datetime import datetime, timedelta, timezone
@@ -235,7 +236,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     @app.get("/health")
     def health():
         status = "ok" if manifest else "degraded"
-        return jsonify(status=status, runtime="flask", pages=len(manifest), application="EFL by Level")
+        return jsonify(status=status, runtime="flask", pages=len(manifest), application="EFL by Level", hosting_node=socket.getfqdn())
 
     @app.route("/", methods=["GET", "HEAD", "POST"])
     @app.route("/<path:requested_path>", methods=["GET", "HEAD", "POST"])
