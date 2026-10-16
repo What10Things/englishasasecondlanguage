@@ -1,0 +1,59 @@
+name: Verify EFL Stripe credentials
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [.github/workflows/verify-stripe.yml]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check keys and sandbox Checkout permissions
+        env:
+          EFL_STRIPE_SECRET_KEY: ${{ secrets.EFL_STRIPE_SECRET_KEY }}
+          EFL_STRIPE_TEST_SECRET_KEY: ${{ secrets.EFL_STRIPE_TEST_SECRET_KEY }}
+        run: |
+          python - <<'PY'
+          import os, json, re, sys, uuid
+          from urllib.request import Request, urlopen
+          from urllib.parse import urlencode
+          from urllib.error import HTTPError
+          keys = {mode: os.environ.get(name, '').strip() for mode,name in [('live','EFL_STRIPE_SECRET_KEY'),('test','EFL_STRIPE_TEST_SECRET_KEY')]}
+          errors=[]
+          for mode,key in keys.items():
+              valid=bool(re.fullmatch(r'(?:sk|rk)_'+mode+r'_[A-Za-z0-9]+',key))
+              print(mode+'_key_present='+str(bool(key)).lower())
+              print(mode+'_key_format_valid='+str(valid).lower())
+              if not valid: errors.append(mode+' key missing or wrong mode/type')
+          if errors: sys.exit('; '.join(errors))
+          def call(mode,path,data=None):
+              req=Request('https://api.stripe.com/v1/'+path, data=urlencode(data).encode() if data is not None else None,headers={'Authorization':'Bearer '+keys[mode],'Stripe-Version':'2024-06-20','Idempotency-Key':'efl-credential-check-'+str(uuid.uuid4())})
+              try:
+                  with urlopen(req,timeout=25) as response: return json.load(response)
+              except HTTPError as exc:
+                  payload=json.loads(exc.read()).get('error',{})
+                  # Never log response bodies, request headers, keys or customer records.
+                  message=payload.get('message','')
+                  permissions=sorted(set(re.findall(r'rak_[a-z_]+',message)))
+                  print(json.dumps({'mode':mode,'http_status':exc.code,'required_permissions':permissions}))
+                  raise RuntimeError('Stripe credential/permission check failed') from None
+          try:
+              result=call('live','checkout/sessions?limit=1')
+              assert result.get('object')=='list'
+              print('live_checkout_read=passed')
+              data={'mode':'payment','payment_method_types[0]':'card','line_items[0][price_data][currency]':'gbp','line_items[0][price_data][unit_amount]':'399','line_items[0][price_data][product_data][name]':'EFL sandbox verification','line_items[0][quantity]':'1','success_url':'https://englishasaforeignlanguage.com/purchase/success/?session_id={CHECKOUT_SESSION_ID}','cancel_url':'https://englishasaforeignlanguage.com/en/resources/'}
+              result=call('test','checkout/sessions',data)
+              assert result.get('livemode') is False and result.get('amount_total')==399
+              sid=result['id']
+              result=call('test','checkout/sessions/'+sid+'?expand[]=payment_intent.latest_charge')
+              assert result.get('payment_status')=='unpaid'
+              print('sandbox_checkout_create_and_read=passed')
+              call('test','checkout/sessions/'+sid+'/expire',{})
+              print('sandbox_session_expired=passed')
+              print('Customer sales remain disabled. Paid checkout/download acceptance still required.')
+          except (RuntimeError,AssertionError):
+              sys.exit('Credential verification did not pass; sales remain disabled.')
+          PY
