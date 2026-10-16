@@ -104,6 +104,11 @@ jobs:
           sudo apt-get install -y fonts-noto-core fonts-noto-cjk
           (cd deploy && python browser_learning.py)
 
+      - name: Complete real sandbox checkout and download gate
+        env:
+          EFL_STRIPE_TEST_SECRET_KEY: ${{ secrets.EFL_STRIPE_TEST_SECRET_KEY }}
+        run: python flask_app/stripe_acceptance.py
+
       - name: Preserve product and browser verification
         if: always()
         uses: actions/upload-artifact@v4
@@ -173,6 +178,8 @@ jobs:
             **/browser-evidence/**
             **/storage/factory_products/**
             **/stripe_acceptance.py
+            **/provision_payments.py
+            **/storage/payment-config.json*
             **/test_factory_sales.py
             **/test_learning.py
             **/browser_learning.py
@@ -264,6 +271,19 @@ jobs:
               print(f'Attempt {attempt} failed: {last_error}; retrying in 8 seconds')
               time.sleep(8)
           PY
+
+      - name: Provision live payments after all acceptance gates
+        env:
+          EFL_STRIPE_SECRET_KEY: ${{ secrets.EFL_STRIPE_SECRET_KEY }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
+          EFL_ENABLE_SALES: '1'
+        run: |
+          if ! python flask_app/provision_payments.py; then
+            EFL_ENABLE_SALES=0 python flask_app/provision_payments.py
+            exit 1
+          fi
 
       - name: Report deployment status
         if: always()
