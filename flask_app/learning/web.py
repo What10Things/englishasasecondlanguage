@@ -235,7 +235,10 @@ def verify_purchase(session_id):
         return None
     if not charge.get('paid') or charge.get('amount_refunded',0)>0 or charge.get('disputed'):
         return None
-    if result.get('livemode') != current_app.config['STRIPE_SECRET_KEY'].startswith('sk_live_'):
+    key=current_app.config['STRIPE_SECRET_KEY']
+    if not key.startswith(('sk_live_', 'rk_live_', 'sk_test_', 'rk_test_')):
+        return None
+    if result.get('livemode') != key.startswith(('sk_live_', 'rk_live_')):
         return None
     return p
 

@@ -3,14 +3,18 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: [.github/workflows/verify-stripe.yml]
+    paths: [.github/workflows/verify-stripe.yml, flask_app/stripe_acceptance.py]
 permissions:
   contents: read
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: Check keys and sandbox Checkout permissions
         env:
           EFL_STRIPE_SECRET_KEY: ${{ secrets.EFL_STRIPE_SECRET_KEY }}
@@ -57,3 +61,13 @@ jobs:
           except (RuntimeError,AssertionError):
               sys.exit('Credential verification did not pass; sales remain disabled.')
           PY
+      - name: Install sandbox browser dependencies
+        run: |
+          pip install -r flask_app/requirements.txt playwright
+          python -m playwright install --with-deps chromium
+      - name: Verify restricted key mode enforcement
+        run: python flask_app/test_factory_sales.py
+      - name: Complete sandbox payment and verify download
+        env:
+          EFL_STRIPE_TEST_SECRET_KEY: ${{ secrets.EFL_STRIPE_TEST_SECRET_KEY }}
+        run: python flask_app/stripe_acceptance.py

@@ -75,4 +75,14 @@ class FactorySales(unittest.TestCase):
         self.assertEqual(self.client.post('/checkout/'+self.ident+'/',data={'csrf':self.token(),'digital_consent':'yes'}).status_code,503)
         self.assertFalse(self.client.get('/resources/'+self.ident+'/release.json').json['checkout_ready'])
 
+    def test_restricted_keys_enforce_payment_mode(self):
+        for prefix,live in [('rk_live_',True),('rk_test_',False),('sk_live_',True),('sk_test_',False)]:
+            self.app.config['STRIPE_SECRET_KEY']=prefix+'fixture'
+            fixture=self.payment();fixture['livemode']=live
+            path='/purchase/download/?session_id=cs_'+('live' if live else 'test')+'_12345678901234567890'
+            with patch('learning.web.stripe_api',return_value=fixture):
+                result=self.client.get(path);self.assertEqual(result.status_code,200);result.close()
+                fixture['livemode']=not live
+                self.assertEqual(self.client.get(path).status_code,403)
+
 if __name__=='__main__':unittest.main()

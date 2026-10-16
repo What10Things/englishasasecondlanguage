@@ -172,6 +172,7 @@ jobs:
             **/storage/.last_retention_prune
             **/browser-evidence/**
             **/storage/factory_products/**
+            **/stripe_acceptance.py
             **/test_factory_sales.py
             **/test_learning.py
             **/browser_learning.py
