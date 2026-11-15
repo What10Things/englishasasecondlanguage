@@ -37,21 +37,51 @@ def main():
                 route.fulfill(status=200,content_type='text/plain',body='Sandbox return captured')
             page.route('https://englishasaforeignlanguage.com/**/purchase/success/**',complete)
             page.route('https://englishasaforeignlanguage.com/purchase/success/**',complete)
+            stage='load_checkout'
+            response=None
             try:
-                page.goto(checkout_url,wait_until='domcontentloaded')
+                response=page.goto(checkout_url,wait_until='domcontentloaded')
+                stage='fill_email'
                 page.locator('#email').fill('efl-acceptance@example.com')
+                stage='fill_card'
                 page.locator('#cardNumber').fill('4242424242424242')
                 page.locator('#cardExpiry').fill('1234')
                 page.locator('#cardCvc').fill('123')
                 page.locator('#billingName').fill('EFL Sandbox Test')
                 if page.locator('#billingCountry').count(): page.locator('#billingCountry').select_option('GB')
                 if page.locator('#billingPostalCode').is_visible(): page.locator('#billingPostalCode').fill('SW1A 1AA')
+                stage='submit_checkout'
                 page.locator('button[type=submit]').click()
+                stage='wait_for_success_return'
                 page.wait_for_url('https://englishasaforeignlanguage.com/**',timeout=60000)
                 assert callback, 'No successful Checkout return'
-            except Exception:
-                # Labels and control names only; never dump HTML, keys or payment session URLs.
-                print('sandbox_visible_controls='+json.dumps(page.locator('input,select').evaluate_all('(els)=>els.map(e=>({id:e.id,name:e.name,type:e.type}))')))
+            except Exception as error:
+                # Report browser state without HTML, field values, keys or session URLs.
+                def host_category(url):
+                    host=urlsplit(url).hostname
+                    expected={'checkout.stripe.com','js.stripe.com','hooks.stripe.com',
+                              'englishasaforeignlanguage.com'}
+                    if host in expected: return host
+                    return 'other' if host else 'none'
+                diagnostic={'stage':stage,'error_type':type(error).__name__,
+                            'http_status':response.status if response else None,
+                            'page_host':host_category(page.url),'frames':[]}
+                for frame in page.frames:
+                    try:
+                        state=frame.evaluate('''() => {
+                            const text=(document.body?.innerText || '').toLowerCase();
+                            const phrases=['expired','not found','something went wrong','enable javascript',
+                                           'checking your browser','verify you are human','access denied','captcha'];
+                            const fields=['email','cardNumber','cardExpiry','cardCvc','billingName','billingCountry','billingPostalCode'];
+                            return {readyState:document.readyState,
+                                    control_count:document.querySelectorAll('input,select').length,
+                                    expected_fields:fields.filter(id=>document.getElementById(id)),
+                                    messages:phrases.filter(phrase=>text.includes(phrase))};
+                        }''')
+                        diagnostic['frames'].append({'host':host_category(frame.url),**state})
+                    except Exception as frame_error:
+                        diagnostic['frames'].append({'error_type':type(frame_error).__name__})
+                print('sandbox_checkout_diagnostic='+json.dumps(diagnostic))
                 raise RuntimeError('Sandbox browser checkout did not complete') from None
             finally: browser.close()
         sid=parse_qs(urlsplit(callback[0]).query)['session_id'][0]
