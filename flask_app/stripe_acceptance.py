@@ -4,6 +4,7 @@ import json
 import os
 import re
 import tempfile
+import time
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 from playwright.sync_api import sync_playwright
@@ -37,21 +38,37 @@ def main():
                 route.fulfill(status=200,content_type='text/plain',body='Sandbox return captured')
             page.route('https://englishasaforeignlanguage.com/**/purchase/success/**',complete)
             page.route('https://englishasaforeignlanguage.com/purchase/success/**',complete)
+            def checkout_control(selector=None, optional=False, pay_button=False):
+                """Checkout can place its visible controls in Stripe-owned frames."""
+                deadline=time.monotonic()+(2 if optional else 30)
+                while time.monotonic()<deadline:
+                    for frame in page.frames:
+                        if urlsplit(frame.url).hostname not in {'checkout.stripe.com','js.stripe.com'}:
+                            continue
+                        control=(frame.get_by_role('button',name=re.compile(r'^Pay(?:\s+(?:£|GBP|\d).*)?$',re.I))
+                                 if pay_button else frame.locator(':is('+selector+'):visible'))
+                        if control.count() and control.first.is_visible(): return control.first
+                    page.wait_for_timeout(100)
+                if optional: return None
+                raise RuntimeError('Required sandbox Checkout control was not available')
             stage='load_checkout'
             response=None
             try:
                 response=page.goto(checkout_url,wait_until='domcontentloaded')
                 stage='fill_email'
-                page.locator('#email').fill('efl-acceptance@example.com')
+                checkout_control('input[type="email"],input[autocomplete~="email"]').fill('efl-acceptance@example.com')
                 stage='fill_card'
-                page.locator('#cardNumber').fill('4242424242424242')
-                page.locator('#cardExpiry').fill('1234')
-                page.locator('#cardCvc').fill('123')
-                page.locator('#billingName').fill('EFL Sandbox Test')
-                if page.locator('#billingCountry').count(): page.locator('#billingCountry').select_option('GB')
-                if page.locator('#billingPostalCode').is_visible(): page.locator('#billingPostalCode').fill('SW1A 1AA')
+                checkout_control('input[autocomplete~="cc-number"],input[name="cardNumber"],input[name="number"]').fill('4242424242424242')
+                checkout_control('input[autocomplete~="cc-exp"],input[name="cardExpiry"],input[name="expiry"]').fill('1234')
+                checkout_control('input[autocomplete~="cc-csc"],input[name="cardCvc"],input[name="cvc"]').fill('123')
+                name=checkout_control('input[autocomplete~="cc-name"],input[autocomplete~="name"],input[name="billingName"]',optional=True)
+                if name: name.fill('EFL Sandbox Test')
+                country=checkout_control('select[autocomplete~="country"],select[name="country"],select[name="billingCountry"]',optional=True)
+                if country: country.select_option('GB')
+                postal=checkout_control('input[autocomplete~="postal-code"],input[name="billingPostalCode"]',optional=True)
+                if postal: postal.fill('SW1A 1AA')
                 stage='submit_checkout'
-                page.locator('button[type=submit]').click()
+                checkout_control(pay_button=True).click()
                 stage='wait_for_success_return'
                 page.wait_for_url('https://englishasaforeignlanguage.com/**',timeout=60000)
                 assert callback, 'No successful Checkout return'
