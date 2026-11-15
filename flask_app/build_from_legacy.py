@@ -146,6 +146,16 @@ def add_company_disclosure(route: str, html: str) -> str:
     return html
 
 
+def apply_accessibility_updates(html: str) -> str:
+    """Keep the study-rhythm card within the page's main learning content."""
+    return re.sub(
+        r'<aside class="study-card">(.*?)</aside>',
+        r'<div class="study-card">\1</div>',
+        html,
+        flags=re.DOTALL,
+    )
+
+
 def apply_compliance_updates(route: str, html: str) -> str:
     """Apply the data-protection copy and controls to rendered legacy pages."""
     html = re.sub(
@@ -297,7 +307,7 @@ def build(legacy_root: Path, router: Path, output: Path) -> None:
                 visited.add(route)
                 status, html = fetch_page(route)
                 if html.strip():
-                    html = apply_compliance_updates(route, html)
+                    html = apply_accessibility_updates(apply_compliance_updates(route, html))
                     html = add_company_disclosure(route, html)
                 if status >= 500 or not html.strip():
                     continue
@@ -319,7 +329,7 @@ def build(legacy_root: Path, router: Path, output: Path) -> None:
 
             _, not_found_html = fetch_page("/__flask_missing_page__/")
             if not_found_html.strip():
-                not_found_html = apply_compliance_updates("/404/", not_found_html)
+                not_found_html = apply_accessibility_updates(apply_compliance_updates("/404/", not_found_html))
                 not_found_html = add_company_disclosure("/404/", not_found_html)
                 filename = page_name("/404/")
                 (output / "pages" / filename).write_text(not_found_html, encoding="utf-8")
